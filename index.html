@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Auditor de Integridade de Urna Eletrônica</title>
-<meta name="description" content="Ferramenta de auditoria independente de logs de urna eletrônica. Processamento local.">
+<meta name="description" content="Ferramenta de auditoria independente de logs de urna eletrônica. Processamento local e seguro.">
 <style>
 /* --- DESIGN SYSTEM & VARS --- */
 :root {
@@ -17,14 +17,13 @@
     --text-inverse: #f8fafc;
     
     --border: #e2e8f0;
-    --primary: #2563eb; /* Azul Institucional */
+    --primary: #2563eb;
     --primary-hover: #1d4ed8;
-    --accent: #f59e0b;
     
-    --success-bg: #dcfce7; --success-tx: #166534; --success-bd: #86efac;
-    --warning-bg: #fef3c7; --warning-tx: #92400e; --warning-bd: #fcd34d;
-    --error-bg:   #fee2e2; --error-tx:   #991b1b; --error-bd:   #fca5a5;
-    --info-bg:    #eff6ff;  --info-tx:    #1e40af; --info-bd:    #bfdbfe;
+    --success-bg: #dcfce7; --success-tx: #166534;
+    --warning-bg: #fef3c7; --warning-tx: #92400e;
+    --error-bg:   #fee2e2; --error-tx:   #991b1b;
+    --info-bg:    #eff6ff;  --info-tx:    #1e40af;
     
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -39,10 +38,10 @@
         --text-main: #f1f5f9; --text-muted: #94a3b8;
         --border: #334155;
         --primary: #3b82f6; --primary-hover: #60a5fa;
-        --success-bg: #064e3b; --success-tx: #ecfccb; --success-bd: #22c55e;
-        --warning-bg: #451a03; --warning-tx: #fef3c7; --warning-bd: #fbbf24;
-        --error-bg:   #450a0a; --error-tx:   #fee2e2; --error-bd:   #ef4444;
-        --info-bg:    #172554;  --info-tx:    #dbeafe;  --info-bd:    #3b82f6;
+        --success-bg: #064e3b; --success-tx: #ecfccb;
+        --warning-bg: #451a03; --warning-tx: #fef3c7;
+        --error-bg:   #450a0a; --error-tx:   #fee2e2;
+        --info-bg:    #172554;  --info-tx:    #dbeafe;
     }
 }
 
@@ -126,19 +125,21 @@ tr:hover td { background: rgba(0,0,0,0.02); }
 
 canvas { width: 100%; height: 250px; display: block; }
 
-/* --- MODAL --- */
+/* --- MODAL & LOADING --- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; display: grid; place-items: center; padding: 20px; }
 .modal-content { background: var(--bg-surface); width: 100%; max-width: 900px; max-height: 85vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); }
 .modal-body { padding: 24px; overflow-y: auto; }
 
-/* --- ANIMATIONS --- */
+.loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(2px); z-index: 100; display: grid; place-items: center; flex-direction: column; gap: 16px; }
+.spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
 /* --- PRINT --- */
 @media print {
-    aside, header .noprint, .modal-overlay { display: none !important; }
+    aside, header .noprint, .modal-overlay, .loading-overlay { display: none !important; }
     #app { display: block; }
     main { width: 100%; }
     .content { padding: 0; max-width: 100%; }
@@ -149,13 +150,20 @@ canvas { width: 100%; height: 250px; display: block; }
 }
 @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; }
-    aside { display: none; } /* Mobile menu implementation omitted for brevity, keeping simple */
+    aside { display: none; }
     header { padding: 12px 16px; }
     .content { padding: 16px; }
 }
 </style>
 </head>
 <body>
+
+<!-- LOADING -->
+<div id="loading" class="loading-overlay hide">
+    <div class="spinner"></div>
+    <div class="font-bold text-lg" id="loadingText">Processando arquivo...</div>
+    <div class="mu text-sm">Descompactando e analisando dados localmente</div>
+</div>
 
 <!-- LANDING -->
 <div id="landing">
@@ -164,19 +172,19 @@ canvas { width: 100%; height: 250px; display: block; }
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
         </div>
         <h1 class="text-xl font-bold">Auditor de Log de Urna</h1>
-        <p class="mu mt-4">Ferramenta técnica independente para análise de integridade e consistência de arquivos <code>logd.dat</code>.<br>Processamento 100% local (Client-Side). Seus dados não saem deste computador.</p>
+        <p class="mu mt-4">Ferramenta técnica independente para análise de integridade e consistência de arquivos de log.<br>Suporta arquivos <code>.zip</code>, <code>.jez</code> e <code>logd.dat</code> descompactado.</p>
         
         <div class="drop-zone" id="dropzone">
             <input type="file" id="fileInput" accept=".zip,.jez,.dat,.txt">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" style="margin-bottom:12px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <div class="font-bold text-lg">Clique ou arraste o arquivo aqui</div>
-            <div class="mu text-sm mt-4">Suporta .zip, .jez, logd.dat (descompactado)</div>
+            <div class="mu text-sm mt-4">Processamento 100% local. Seus dados não saem deste computador.</div>
         </div>
 
         <div class="features">
-            <div class="feat-item"><b class="text-primary">Auditoria Automática</b><span class="text-xs mu">20+ verificações heurísticas de segurança e fluxo.</span></div>
-            <div class="feat-item"><b class="text-primary">Conferência BU</b><span class="text-xs mu">Comparação aritmética entre log e boletim de urna.</span></div>
-            <div class="feat-item"><b class="text-primary">Privacidade Total</b><span class="text-xs mu">JavaScript puro. Sem envio de dados para servidores.</span></div>
+            <div class="feat-item"><b class="text-primary" style="color:var(--primary)">Auditoria Automática</b><span class="text-xs mu">20+ verificações heurísticas de segurança e fluxo.</span></div>
+            <div class="feat-item"><b class="text-primary" style="color:var(--primary)">Conferência BU</b><span class="text-xs mu">Comparação aritmética entre log e boletim de urna.</span></div>
+            <div class="feat-item"><b class="text-primary" style="color:var(--primary)">Privacidade Total</b><span class="text-xs mu">JavaScript puro. Sem envio de dados para servidores.</span></div>
         </div>
     </div>
 </div>
@@ -186,13 +194,13 @@ canvas { width: 100%; height: 250px; display: block; }
     <aside>
         <div class="brand">
             <div class="brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-            <div class="font-bold">Auditor v2.0</div>
+            <div class="font-bold">Auditor v2.1</div>
         </div>
         <nav id="navMenu"></nav>
         <div class="sidebar-footer">
             Arquivo atual:<br>
             <span id="currentFile" class="font-mono text-xs mu" style="word-break:break-all">...</span>
-            <button id="btnReset" class="text-xs mu" style="margin-top:8px; text-decoration:underline">Carregar outro arquivo</button>
+            <button id="btnReset" class="text-xs mu" style="margin-top:8px; text-decoration:underline; border:none; background:none; padding:0;">Carregar outro arquivo</button>
         </div>
     </aside>
 
@@ -204,12 +212,11 @@ canvas { width: 100%; height: 250px; display: block; }
             </div>
             <div class="flex items-center gap-4 noprint">
                 <select id="daySelect" class="text-sm" style="min-width:150px"></select>
-                <button class="btn btn-secondary" onclick="$('#app').classList.add('hide'); $('#landing').classList.remove('hide')">Novo Arquivo</button>
+                <button class="btn btn-secondary" onclick="location.reload()">Novo Arquivo</button>
             </div>
         </header>
 
         <div class="content">
-            <!-- SECTIONS -->
             <section id="sec-overview"></section>
             <section id="sec-audit" class="hide"></section>
             <section id="sec-votes" class="hide"></section>
@@ -222,22 +229,29 @@ canvas { width: 100%; height: 250px; display: block; }
     </main>
 </div>
 
-<div id="modal" class="modal-overlay hide" onclick="if(event.target===this)this.classList.add('hide')"></div>
+<div id="modal" class="modal-overlay hide" onclick="if(event.target===this)this.classList.add('hide')">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Detalhes</h3>
+            <button onclick="$('#modal').classList.add('hide')" style="font-size:20px; line-height:1;">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+    </div>
+</div>
 
+<!-- JSZip para descompactação robusta -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 /**
  * AUDITOR DE LOG DE URNA - CORE ENGINE
- * Arquitetura: Parser -> Analyzer -> Renderer
+ * Suporte robusto a ZIP, JEZ e decodificação Windows-1252 (Latin1)
  */
 
-// --- HELPERS ---
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const fmtDate = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
 
-// --- STATE ---
 let RAW_LOGS = [];
 let PARSED_DAYS = {};
 let ACTIVE_DAY = '';
@@ -245,7 +259,7 @@ let CURRENT_FILE = '';
 let GLOBAL_AUDIT = {};
 let CURRENT_VIEW = 'overview';
 
-// --- FILE HANDLING ---
+// --- FILE HANDLING ROBUSTO ---
 const dropZone = $('#dropzone');
 const fileInput = $('#fileInput');
 
@@ -261,40 +275,90 @@ async function handleFiles(files) {
     CURRENT_FILE = file.name;
     $('#currentFile').textContent = file.name;
     
+    $('#loading').classList.remove('hide');
+    $('#loadingText').textContent = "Lendo arquivo...";
+    
+    // Pequeno delay para permitir a renderização da UI de loading
+    await new Promise(r => setTimeout(r, 50));
+
     try {
-        let buffer = await file.arrayBuffer();
-        // Auto-unzip logic
+        const buffer = await file.arrayBuffer();
         const u8 = new Uint8Array(buffer);
-        if (u8[0] === 0x50 && u8[1] === 0x4B) { // ZIP magic number
+        
+        // Detecta se é ZIP (Magic Number PK) ou extensão .zip/.jez
+        const isZip = (u8[0] === 0x50 && u8[1] === 0x4B) || 
+                      file.name.toLowerCase().endsWith('.zip') || 
+                      file.name.toLowerCase().endsWith('.jez');
+        
+        let logText = "";
+        
+        if (isZip) {
+            $('#loadingText').textContent = "Descompactando arquivo ZIP/JEZ...";
             const zip = await JSZip.loadAsync(buffer);
-            // Find logd.dat or first dat/txt file
-            const target = Object.keys(zip.files).find(k => /logd\.dat$/i.test(k)) || 
-                           Object.keys(zip.files).find(k => /\.(dat|txt)$/i.test(k));
-            if (!target) throw new Error("Nenhum arquivo de log encontrado dentro do ZIP.");
-            buffer = await zip.files[target].async('arraybuffer');
+            
+            // Encontra candidatos a arquivo de log dentro do ZIP
+            const candidates = Object.keys(zip.files).filter(path => {
+                if (zip.files[path].dir) return false;
+                const lower = path.toLowerCase();
+                return lower.endsWith('logd.dat') || lower.endsWith('.dat') || lower.endsWith('.txt');
+            });
+            
+            if (candidates.length === 0) {
+                throw new Error("Nenhum arquivo de log (.dat, .txt, logd.dat) encontrado dentro do arquivo compactado.");
+            }
+            
+            // Prioriza 'logd.dat' exato, depois o maior arquivo .dat
+            candidates.sort((a, b) => {
+                const aIsLogd = a.toLowerCase().endsWith('logd.dat');
+                const bIsLogd = b.toLowerCase().endsWith('logd.dat');
+                if (aIsLogd && !bIsLogd) return -1;
+                if (!aIsLogd && bIsLogd) return 1;
+                // Fallback: tamanho
+                return zip.files[b]._data.uncompressedSize - zip.files[a]._data.uncompressedSize;
+            });
+            
+            const targetFile = zip.files[candidates[0]];
+            $('#loadingText').textContent = `Extraindo: ${candidates[0]}...`;
+            
+            // Lê como ArrayBuffer para decodificar corretamente com Windows-1252 (padrão urna)
+            const fileBuffer = await targetFile.async("arraybuffer");
+            logText = new TextDecoder('windows-1252').decode(fileBuffer);
+            
+        } else {
+            // Arquivo direto (descompactado)
+            $('#loadingText').textContent = "Decodificando arquivo de texto...";
+            logText = new TextDecoder('windows-1252').decode(buffer);
         }
         
-        const text = new TextDecoder('latin1').decode(buffer); // Latin1 is common for older systems
-        processLog(text);
+        $('#loadingText').textContent = "Analisando dados e executando auditoria...";
+        await new Promise(r => setTimeout(r, 50)); // UI update
         
+        processLog(logText);
+        
+        $('#loading').classList.add('hide');
         $('#landing').classList.add('hide');
         $('#app').classList.remove('hide');
+        
         renderNav();
         switchView('overview');
+        
     } catch (err) {
-        alert("Erro ao processar arquivo: " + err.message);
+        $('#loading').classList.add('hide');
+        alert("Erro ao processar arquivo:\n\n" + err.message);
         console.error(err);
     }
 }
 
 // --- PARSER ---
 function processLog(text) {
+    // Divide por linhas e filtra vazias
     const lines = text.split(/\r?\n/).filter(l => l.trim());
+    
     RAW_LOGS = lines.map((line, idx) => {
         const parts = line.split('\t');
-        // Expected: Date/Time \t Level \t Module \t Message \t Hash(Optional)
         if (parts.length < 4) return null;
         
+        // Regex robusta para data: DD/MM/AAAA HH:MM:SS
         const dateMatch = parts[0].match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/);
         if (!dateMatch) return null;
         
@@ -302,37 +366,50 @@ function processLog(text) {
             idx,
             raw: parts[0],
             date: new Date(+dateMatch[3], dateMatch[2]-1, +dateMatch[1], +dateMatch[4], +dateMatch[5], +dateMatch[6]),
-            dayKey: `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`, // ISO-ish for sorting
-            level: parts[1],
-            module: parts[2],
-            msg: parts[3],
-            hash: parts[4] || ''
+            dayKey: `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`,
+            level: parts[1].trim(),
+            module: parts[2].trim(),
+            msg: parts[3].trim(),
+            hash: parts[4] ? parts[4].trim() : ''
         };
     }).filter(Boolean);
 
-    // Group by Day
+    if (RAW_LOGS.length === 0) {
+        throw new Error("Formato de log não reconhecido. Verifique se o arquivo é um log válido da urna.");
+    }
+
+    // Agrupa por dia
     PARSED_DAYS = {};
     RAW_LOGS.forEach(r => {
         if (!PARSED_DAYS[r.dayKey]) PARSED_DAYS[r.dayKey] = [];
         PARSED_DAYS[r.dayKey].push(r);
     });
 
-    // Analyze each day
+    // Analisa cada dia
     Object.keys(PARSED_DAYS).forEach(day => analyzeDay(day));
     
-    // Global Analysis
+    // Análise global
     analyzeGlobal();
 
-    // Setup Select
+    // Configura seletor de dias
     const days = Object.keys(PARSED_DAYS).sort();
     const select = $('#daySelect');
-    select.innerHTML = days.map(d => `<option value="${d}">${fmtDate(PARSED_DAYS[d][0].date)} (${PARSED_DAYS[d].filter(r=>r.msg.includes('computado')).length} votos)</option>`).join('');
+    select.innerHTML = days.map(d => {
+        const meta = PARSED_DAYS[d].meta;
+        const votoCount = meta ? meta.votes.length : 0;
+        return `<option value="${d}">${fmtDate(PARSED_DAYS[d][0].date)} (${votoCount} votos)</option>`;
+    }).join('');
     
-    // Set Active Day (prefer last day with votes)
-    const votingDays = days.filter(d => PARSED_DAYS[d].some(r => r.msg.includes('O voto do eleitor foi computado')));
+    // Define dia ativo (prefere o último dia com votos)
+    const votingDays = days.filter(d => PARSED_DAYS[d].meta && PARSED_DAYS[d].meta.votes.length > 0);
     ACTIVE_DAY = votingDays.length ? votingDays[votingDays.length-1] : days[days.length-1];
     
-    select.onchange = (e) => { ACTIVE_DAY = e.target.value; renderActiveView(); };
+    select.onchange = (e) => { 
+        ACTIVE_DAY = e.target.value; 
+        // Limpa caches de renderização se necessário
+        document.querySelectorAll('section').forEach(s => s.classList.add('hide'));
+        renderActiveView(); 
+    };
 }
 
 // --- ANALYZER LOGIC ---
@@ -349,46 +426,60 @@ function analyzeDay(dayKey) {
         closing: logs.find(r => r.msg.includes('Procedimento de encerramento confirmado')),
         endVote: logs.find(r => r.msg.includes('Votação encerrada')),
         buPrints: logs.filter(r => r.msg.includes('Imprimindo relatório [BU]')),
-        filesGen: logs.filter(r => r.msg.match(/Gerando arquivo de resultado/)).map(r => r.msg.match(/\[(.*?)\]/)[1]),
+        filesGen: logs.filter(r => r.msg.match(/Gerando arquivo de resultado/)).map(r => {
+            const match = r.msg.match(/\[(.*?)\]/);
+            return match ? match[1] : '';
+        }),
         cargos: {},
         issues: []
     };
 
-    // Count Cargos
+    // Contagem de cargos
     logs.filter(r => r.msg.startsWith('Voto confirmado para')).forEach(r => {
-        const cargo = r.msg.match(/\[(.*?)\]/)[1];
-        data.cargos[cargo] = (data.cargos[cargo] || 0) + 1;
+        const cargoMatch = r.msg.match(/\[(.*?)\]/);
+        if (cargoMatch) {
+            const cargo = cargoMatch[1];
+            data.cargos[cargo] = (data.cargos[cargo] || 0) + 1;
+        }
     });
 
-    // Heuristics Checks
+    // Heurísticas de verificação
     if (data.votes.length > 0) {
         const firstVote = data.votes[0];
         const lastVote = data.votes[data.votes.length-1];
         
-        // Time checks
-        if (firstVote.date.getHours() < 8) data.issues.push({type:'ERRO', msg:`Primeiro voto às ${fmtTime(firstVote.date)} (antes das 08:00)`});
-        if (lastVote.date.getHours() >= 17 && lastVote.date.getMinutes() > 0) {
-             // Simplified check, real rule allows queue
-             // data.issues.push({type:'ALERTA', msg:`Voto após 17:00 detectado.`});
+        if (firstVote.date.getHours() < 8) {
+            data.issues.push({type:'ERRO', msg:`Primeiro voto registrado às ${fmtTime(firstVote.date)} (antes das 08:00).`});
+        }
+        
+        if (!data.zeroReport) {
+            data.issues.push({type:'ERRO', msg:'Zerésima não encontrada no log.'});
+        } else if (data.zeroReport.date > firstVote.date) {
+            data.issues.push({type:'ERRO', msg:`Zerésima impressa às ${fmtTime(data.zeroReport.date)}, APÓS o primeiro voto (${fmtTime(firstVote.date)}).`});
         }
 
-        // Zero Report Check
-        if (!data.zeroReport) data.issues.push({type:'ERRO', msg:'Zerésima não encontrada.'});
-        else if (data.zeroReport.date > firstVote.date) data.issues.push({type:'ERRO', msg:'Zerésima impressa APÓS o primeiro voto.'});
-
-        // Consistency
-        if (data.enables.length !== data.votes.length) data.issues.push({type:'ERRO', msg:`Divergência: ${data.enables.length} habilitações vs ${data.votes.length} votos.`});
+        if (data.enables.length !== data.votes.length) {
+            data.issues.push({type:'ERRO', msg:`Divergência crítica: ${data.enables.length} habilitações para ${data.votes.length} votos computados.`});
+        }
         
-        // Files
         const requiredFiles = ['bu.dat', 'rdv.dat', 'hash.dat'];
         const missing = requiredFiles.filter(f => !data.filesGen.includes(f));
-        if (missing.length) data.issues.push({type:'ERRO', msg:`Arquivos ausentes: ${missing.join(', ')}`});
+        if (missing.length) {
+            data.issues.push({type:'ERRO', msg:`Arquivos de resultado ausentes: ${missing.join(', ')}`});
+        }
 
-        // Battery
         const battEvents = logs.filter(r => r.msg.includes('operando na bateria interna'));
-        if (battEvents.length > 0) data.issues.push({type:'ALERTA', msg:`Urna operou na bateria em ${battEvents.length} momento(s).`});
-    } else {
-        // Non-voting day checks (setup/test)
+        if (battEvents.length > 0) {
+            data.issues.push({type:'ALERTA', msg:`Urna operou na bateria interna em ${battEvents.length} momento(s) durante o dia.`});
+        }
+        
+        // Verifica votos após encerramento
+        if (data.closing) {
+            const votesAfter = data.votes.filter(v => v.date > data.closing.date).length;
+            if (votesAfter > 0) {
+                data.issues.push({type:'ERRO', msg:`${votesAfter} voto(s) computado(s) APÓS o procedimento de encerramento confirmado.`});
+            }
+        }
     }
 
     PARSED_DAYS[dayKey].meta = data;
@@ -404,20 +495,22 @@ function analyzeGlobal() {
         uniqueUrn: urnIds.length <= 1,
         uniqueSerial: serials.length <= 1,
         uniqueLoad: loadCodes.length <= 1,
-        timeJumps: 0 // Simplified
+        timeJumps: 0
     };
 
-    // Check time jumps
+    // Verifica saltos de tempo (relógio retrocedendo)
     for(let i=1; i<RAW_LOGS.length; i++) {
-        if (RAW_LOGS[i].date < RAW_LOGS[i-1].date) GLOBAL_AUDIT.timeJumps++;
+        if (RAW_LOGS[i].date < RAW_LOGS[i-1].date) {
+            GLOBAL_AUDIT.timeJumps++;
+        }
     }
 }
 
 // --- RENDERER ---
 function renderNav() {
     const meta = PARSED_DAYS[ACTIVE_DAY].meta;
-    const totalIssues = meta.issues.length;
-    const errs = meta.issues.filter(i => i.type === 'ERRO').length;
+    const totalIssues = meta ? meta.issues.length : 0;
+    const errs = meta ? meta.issues.filter(i => i.type === 'ERRO').length : 0;
     
     const menu = [
         {id:'overview', icon:'layout', label:'Visão Geral'},
@@ -454,6 +547,7 @@ function switchView(viewId) {
         report: 'Relatório Técnico'
     };
     
+    const meta = PARSED_DAYS[ACTIVE_DAY].meta;
     $('#pageTitle').textContent = titles[viewId];
     $('#pageSub').textContent = `Urna: ${GLOBAL_AUDIT.urnId} | Dia: ${fmtDate(PARSED_DAYS[ACTIVE_DAY][0].date)}`;
     
@@ -462,6 +556,7 @@ function switchView(viewId) {
 
 function renderActiveView() {
     const meta = PARSED_DAYS[ACTIVE_DAY].meta;
+    if (!meta) return;
     
     if (CURRENT_VIEW === 'overview') renderOverview(meta);
     else if (CURRENT_VIEW === 'audit') renderAudit(meta);
@@ -471,16 +566,16 @@ function renderActiveView() {
     else if (CURRENT_VIEW === 'logs') renderLogs();
     else if (CURRENT_VIEW === 'report') renderReport(meta);
     
-    renderNav(); // Update badges if needed
+    renderNav();
 }
 
 // --- SPECIFIC VIEWS ---
 
 function renderOverview(meta) {
     const kpis = [
-        {label:'Total Registros', val: meta.logs.length, type:'info'},
-        {label:'Votos Computados', val: meta.votes.length, type:'ok'},
-        {label:'Biometria', val: meta.bioEnables.length, sub: meta.votes.length ? Math.round(100*meta.bioEnables.length/meta.votes.length)+'%' : '', type:'info'},
+        {label:'Total Registros', val: meta.logs.length.toLocaleString(), type:'info'},
+        {label:'Votos Computados', val: meta.votes.length.toLocaleString(), type:'ok'},
+        {label:'Biometria', val: meta.bioEnables.length.toLocaleString(), sub: meta.votes.length ? Math.round(100*meta.bioEnables.length/meta.votes.length)+'%' : '', type:'info'},
         {label:'Alertas/Erros', val: meta.issues.length, type: meta.issues.some(i=>i.type==='ERRO')?'err':'warn'}
     ];
 
@@ -495,17 +590,18 @@ function renderOverview(meta) {
         </div>
         
         <div class="flex gap-4" style="flex-wrap:wrap">
-            <div class="card" style="flex:2">
+            <div class="card" style="flex:2; min-width:300px">
                 <h3>Fluxo de Votos por Hora</h3>
                 <canvas id="chartVotesHour"></canvas>
             </div>
-            <div class="card" style="flex:1">
+            <div class="card" style="flex:1; min-width:250px">
                 <h3>Distribuição por Cargo</h3>
                 <div class="wrap-table" style="max-height:250px">
                     <table>
                         <thead><tr><th>Cargo</th><th class="text-right">Qtd</th></tr></thead>
                         <tbody>
                             ${Object.entries(meta.cargos).map(([c,q]) => `<tr><td>${esc(c)}</td><td class="text-right font-mono">${q}</td></tr>`).join('')}
+                            ${Object.keys(meta.cargos).length === 0 ? '<tr><td colspan="2" class="mu text-center">Nenhum dado</td></tr>' : ''}
                         </tbody>
                     </table>
                 </div>
@@ -513,7 +609,6 @@ function renderOverview(meta) {
         </div>
     `;
     
-    // Draw Chart
     setTimeout(() => {
         const hours = Array(24).fill(0);
         meta.votes.forEach(v => hours[v.date.getHours()]++);
@@ -524,7 +619,7 @@ function renderOverview(meta) {
 function renderAudit(meta) {
     const rows = meta.issues.length ? meta.issues.map(i => `
         <tr>
-            <td><span class="chip ${i.type}">${i.type}</span></td>
+            <td style="width:100px"><span class="chip ${i.type}">${i.type}</span></td>
             <td>${esc(i.msg)}</td>
         </tr>
     `).join('') : `<tr><td colspan="2" class="text-center mu" style="padding:20px">Nenhuma inconsistência crítica detectada neste dia.</td></tr>`;
@@ -545,7 +640,7 @@ function renderAudit(meta) {
         
         <div class="card">
             <h3>Status Global do Arquivo</h3>
-            <ul style="list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:10px; margin-top:10px">
+            <ul style="list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:12px; margin-top:16px">
                 <li class="flex items-center gap-2 ${GLOBAL_AUDIT.uniqueUrn?'mu':'text-error'}">
                     <span class="chip ${GLOBAL_AUDIT.uniqueUrn?'OK':'ERRO'}">ID</span> Identificação única da urna
                 </li>
@@ -569,14 +664,11 @@ function renderVotes(meta) {
         return;
     }
     
-    // Cabin times (heuristic based on enable -> vote)
-    // This is complex to map perfectly without state machine, simplified here
-    
     $('#sec-votes').innerHTML = `
         <div class="kpi-grid">
-            <div class="kpi info"><b>${meta.votes.length}</b><span>Total Votos</span></div>
-            <div class="kpi info"><b>${meta.bioEnables.length}</b><span>Habilitações Biométricas</span></div>
-            <div class="kpi warn"><b>${meta.votes.length - meta.bioEnables.length}</b><span>Sem Biometria/Digital Falhou</span></div>
+            <div class="kpi info"><b>${meta.votes.length.toLocaleString()}</b><span>Total Votos</span></div>
+            <div class="kpi info"><b>${meta.bioEnables.length.toLocaleString()}</b><span>Habilitações Biométricas</span></div>
+            <div class="kpi warn"><b>${(meta.votes.length - meta.bioEnables.length).toLocaleString()}</b><span>Sem Biometria/Digital Falhou</span></div>
         </div>
         <div class="card">
             <h3>Curva Acumulada de Votação</h3>
@@ -587,15 +679,14 @@ function renderVotes(meta) {
     setTimeout(() => {
         let acc = 0;
         const data = meta.votes.map((v,i) => { acc++; return {x: fmtTime(v.date), y: acc}; });
-        // Downsample for performance if too many points
-        const step = Math.ceil(data.length / 100);
+        // Downsample para performance em gráficos grandes
+        const step = Math.ceil(data.length / 200) || 1;
         const sampled = data.filter((_,i) => i % step === 0 || i === data.length-1);
         drawLineChart($('#chartAccum'), sampled);
     }, 50);
 }
 
 function renderTimeline(meta) {
-    // Key events
     const events = [
         {t: 'Abertura', logs: meta.logs.filter(l => l.msg.includes('Início das operações'))},
         {t: 'Zerésima', logs: meta.logs.filter(l => l.msg.includes('ZERÉSIMA'))},
@@ -606,11 +697,11 @@ function renderTimeline(meta) {
     let html = '<div class="card"><h3>Eventos Principais</h3><div class="mt-4">';
     events.forEach(ev => {
         if(ev.logs.length) {
-            html += `<div class="mb-4"><b class="text-primary">${ev.t}</b>`;
+            html += `<div class="mb-4"><b class="text-primary" style="color:var(--primary)">${ev.t}</b>`;
             ev.logs.forEach(l => {
-                html += `<div class="flex gap-4 text-sm mu" style="border-left:2px solid var(--border); padding-left:10px; margin-top:4px">
-                    <span class="font-mono">${fmtTime(l.date)}</span>
-                    <span>${esc(l.msg.substring(0,100))}</span>
+                html += `<div class="flex gap-4 text-sm mu" style="border-left:2px solid var(--border); padding-left:12px; margin-top:6px">
+                    <span class="font-mono" style="min-width:80px">${fmtTime(l.date)}</span>
+                    <span>${esc(l.msg.substring(0,120))}${l.msg.length>120?'...':''}</span>
                 </div>`;
             });
             html += `</div>`;
@@ -624,16 +715,16 @@ function renderBU(meta) {
     $('#sec-bu').innerHTML = `
         <div class="card">
             <h3>Conferência Aritmética (BU)</h3>
-            <p class="mu text-sm mb-4">Insira os dados do Boletim de Urna impresso para conferir com o log digital.</p>
+            <p class="mu text-sm mb-4">Insira os dados do Boletim de Urna impresso para conferir com o log digital. Campos vazios são ignorados.</p>
             
             <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
-                <div><label class="text-xs font-bold">Comparecimento (Qtd Votos)</label><br><input type="number" id="bu-qtd" class="w-full"></div>
-                <div><label class="text-xs font-bold">Biometria (Qtd)</label><br><input type="number" id="bu-bio" class="w-full"></div>
-                <div><label class="text-xs font-bold">Cód. Carga</label><br><input type="text" id="bu-carga" class="w-full"></div>
-                <button class="btn btn-primary" style="align-self:flex-end" onclick="checkBU()">Conferir</button>
+                <div style="flex:1; min-width:150px"><label class="text-xs font-bold">Comparecimento (Qtd Votos)</label><br><input type="number" id="bu-qtd" class="w-full"></div>
+                <div style="flex:1; min-width:150px"><label class="text-xs font-bold">Biometria (Qtd)</label><br><input type="number" id="bu-bio" class="w-full"></div>
+                <div style="flex:1; min-width:150px"><label class="text-xs font-bold">Cód. Carga</label><br><input type="text" id="bu-carga" class="w-full"></div>
+                <button class="btn btn-primary" style="align-self:flex-end; height:38px" onclick="checkBU()">Conferir</button>
             </div>
             
-            <div id="bu-result" class="hide mt-4 p-4 rounded" style="background:var(--bg-body)"></div>
+            <div id="bu-result" class="hide mt-4 p-4 rounded" style="background:var(--bg-body); border:1px solid var(--border)"></div>
         </div>
     `;
 }
@@ -646,23 +737,22 @@ window.checkBU = function() {
     
     let res = [];
     
-    if (qtd) {
+    if (!isNaN(qtd)) {
         const match = qtd === meta.votes.length;
-        res.push(`<div class="${match?'text-success':'text-error'} font-bold">Votos: BU=${qtd} vs LOG=${meta.votes.length} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
+        res.push(`<div class="${match?'text-success':'text-error'} font-bold" style="color:${match?'var(--success-tx)':'var(--error-tx)'}">Votos: BU=${qtd} vs LOG=${meta.votes.length} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
     }
-    if (bio) {
+    if (!isNaN(bio)) {
         const match = bio === meta.bioEnables.length;
-        res.push(`<div class="${match?'text-success':'text-error'} font-bold">Biometria: BU=${bio} vs LOG=${meta.bioEnables.length} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
+        res.push(`<div class="${match?'text-success':'text-error'} font-bold" style="color:${match?'var(--success-tx)':'var(--error-tx)'}">Biometria: BU=${bio} vs LOG=${meta.bioEnables.length} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
     }
     if (carga) {
-        // Extract load code from logs roughly
         const logCarga = RAW_LOGS.find(l => l.msg.includes('Código de carga'))?.msg.match(/[\d.]+/)?.[0];
         const match = logCarga && carga.includes(logCarga);
-        res.push(`<div class="${match?'text-success':'text-error'} font-bold">Carga: BU=${carga} vs LOG=${logCarga||'?'} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
+        res.push(`<div class="${match?'text-success':'text-error'} font-bold" style="color:${match?'var(--success-tx)':'var(--error-tx)'}">Carga: BU=${carga} vs LOG=${logCarga||'?'} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
     }
     
     const div = $('#bu-result');
-    div.innerHTML = res.join('<br>') || 'Preencha os campos acima.';
+    div.innerHTML = res.length ? res.join('<br>') : '<span class="mu">Preencha pelo menos um campo acima para conferir.</span>';
     div.classList.remove('hide');
 };
 
@@ -673,9 +763,9 @@ function renderLogs() {
     const logs = PARSED_DAYS[ACTIVE_DAY].logs;
     let html = `
         <div class="card">
-            <div class="flex gap-2 mb-4">
-                <input type="text" id="logFilter" placeholder="Filtrar mensagens..." style="flex:1" onkeyup="filterLogs()">
-                <select id="logLevel" onchange="filterLogs()">
+            <div class="flex gap-2 mb-4" style="flex-wrap:wrap">
+                <input type="text" id="logFilter" placeholder="Filtrar mensagens..." style="flex:1; min-width:200px" onkeyup="filterLogs()">
+                <select id="logLevel" onchange="filterLogs()" style="min-width:120px">
                     <option value="">Todos Níveis</option>
                     <option value="INFO">INFO</option>
                     <option value="ALERTA">ALERTA</option>
@@ -684,12 +774,12 @@ function renderLogs() {
             </div>
             <div class="wrap-table">
                 <table id="logTable">
-                    <thead><tr><th style="width:140px">Hora</th><th style="width:80px">Nível</th><th>Mensagem</th></tr></thead>
-                    <tbody>
-                        ${logs.slice(0, 500).map(l => rowLog(l)).join('')}
+                    <thead><tr><th style="width:140px">Hora</th><th style="width:90px">Nível</th><th>Mensagem</th></tr></thead>
+                    <tbody id="logTableBody">
+                        ${logs.slice(0, 1000).map(l => rowLog(l)).join('')}
                     </tbody>
                 </table>
-                ${logs.length > 500 ? `<div class="p-4 text-center mu">Exibindo primeiros 500 registros. Use o filtro.</div>` : ''}
+                ${logs.length > 1000 ? `<div class="p-4 text-center mu">Exibindo primeiros 1000 registros. Use o filtro para refinar.</div>` : ''}
             </div>
         </div>
     `;
@@ -701,7 +791,7 @@ function rowLog(l) {
     return `<tr class="log-row" data-lvl="${l.level}" data-msg="${esc(l.msg).toLowerCase()}">
         <td class="font-mono text-xs">${fmtTime(l.date)}</td>
         <td><span class="chip ${l.level}">${l.level}</span></td>
-        <td class="text-sm">${esc(l.msg)}</td>
+        <td class="text-sm" style="word-break:break-word">${esc(l.msg)}</td>
     </tr>`;
 }
 
@@ -726,25 +816,27 @@ function renderReport(meta) {
                 <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
             </div>
             
-            <div class="text-sm mu mb-4">
-                <p><b>Arquivo:</b> ${CURRENT_FILE}</p>
-                <p><b>Data de Geração:</b> ${new Date().toLocaleString()}</p>
-                <p><b>Urna:</b> ${GLOBAL_AUDIT.urnId}</p>
+            <div class="text-sm mu mb-4" style="line-height:1.8">
+                <p><b>Arquivo Analisado:</b> ${esc(CURRENT_FILE)}</p>
+                <p><b>Data de Geração:</b> ${new Date().toLocaleString('pt-BR')}</p>
+                <p><b>Urna:</b> ${esc(GLOBAL_AUDIT.urnId)}</p>
                 <p><b>Dia Analisado:</b> ${fmtDate(meta.logs[0].date)}</p>
             </div>
             
             <hr style="border:0; border-top:1px solid var(--border); margin:20px 0">
             
             <h3>1. Resumo Executivo</h3>
-            <p>O log apresenta <b>${meta.votes.length} votos</b> computados. Foram detectadas <b>${meta.issues.length} ocorrências</b> (alertas ou erros) pelas heurísticas automáticas.</p>
+            <p>O log apresenta <b>${meta.votes.length.toLocaleString()} votos</b> computados. Foram detectadas <b>${meta.issues.length} ocorrências</b> (alertas ou erros) pelas heurísticas automáticas.</p>
             
             <h3 class="mt-4">2. Detalhamento de Ocorrências</h3>
-            <table class="mt-4">
-                <thead><tr><th>Tipo</th><th>Descrição</th></tr></thead>
-                <tbody>
-                    ${meta.issues.length ? meta.issues.map(i => `<tr><td><span class="chip ${i.type}">${i.type}</span></td><td>${esc(i.msg)}</td></tr>`).join('') : '<tr><td colspan="2">Nenhuma ocorrência relevante.</td></tr>'}
-                </tbody>
-            </table>
+            <div class="wrap-table mt-4">
+                <table>
+                    <thead><tr><th style="width:100px">Tipo</th><th>Descrição</th></tr></thead>
+                    <tbody>
+                        ${meta.issues.length ? meta.issues.map(i => `<tr><td><span class="chip ${i.type}">${i.type}</span></td><td>${esc(i.msg)}</td></tr>`).join('') : '<tr><td colspan="2">Nenhuma ocorrência relevante detectada.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
 
             <h3 class="mt-4">3. Dados Operacionais</h3>
             <div class="kpi-grid mt-4">
@@ -753,44 +845,51 @@ function renderReport(meta) {
                 <div class="kpi"><b>${meta.filesGen.length}</b><span>Arquivos Gerados</span></div>
             </div>
             
-            <p class="mt-4 text-xs mu">Este relatório é gerado por ferramenta independente e não possui valor legal oficial perante a Justiça Eleitoral. Serve apenas para conferência técnica da integridade dos arquivos de log públicos.</p>
+            <p class="mt-4 text-xs mu" style="border-top:1px solid var(--border); padding-top:16px">
+                <b>Aviso Legal:</b> Este relatório é gerado por ferramenta independente e não possui valor legal oficial perante a Justiça Eleitoral. Serve apenas para conferência técnica da integridade dos arquivos de log públicos. O log não revela o voto de nenhum eleitor.
+            </p>
         </div>
     `;
 }
 
 // --- CHARTING UTILS (Canvas API) ---
 function drawBarChart(canvas, data) {
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.clientWidth, h = canvas.clientHeight;
-    canvas.width = w; canvas.height = h;
+    canvas.width = w * (window.devicePixelRatio || 1);
+    canvas.height = h * (window.devicePixelRatio || 1);
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
     
     const max = Math.max(...data.map(d=>d.y), 1);
-    const barW = (w / data.length) * 0.8;
-    const gap = (w / data.length) * 0.2;
+    const barW = (w / data.length) * 0.7;
+    const gap = (w / data.length) * 0.3;
     
     ctx.clearRect(0,0,w,h);
     ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
     
     data.forEach((d, i) => {
-        const barH = (d.y / max) * (h - 30);
-        ctx.fillRect(i * (barW+gap) + gap/2, h - barH - 20, barW, barH);
+        if (d.y === 0) return;
+        const barH = (d.y / max) * (h - 40);
+        ctx.fillRect(i * (barW+gap) + gap/2, h - barH - 30, barW, barH);
         
-        // Labels
-        if (i % 2 === 0) {
-            ctx.fillStyle = '#999';
-            ctx.font = '10px sans-serif';
-            ctx.fillText(d.x, i * (barW+gap) + gap/2, h - 5);
+        if (i % 2 === 0 || data.length < 12) {
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted');
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(d.x, i * (barW+gap) + gap/2 + barW/2, h - 10);
             ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
         }
     });
 }
 
 function drawLineChart(canvas, data) {
+    if (!canvas || !data.length) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.clientWidth, h = canvas.clientHeight;
-    canvas.width = w; canvas.height = h;
-    
-    if(!data.length) return;
+    canvas.width = w * (window.devicePixelRatio || 1);
+    canvas.height = h * (window.devicePixelRatio || 1);
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
     
     const maxY = data[data.length-1].y;
     const maxX = data.length;
@@ -801,15 +900,22 @@ function drawLineChart(canvas, data) {
     
     data.forEach((d, i) => {
         const x = (i / (maxX-1)) * w;
-        const y = h - ((d.y / maxY) * (h - 40)) - 20;
+        const y = h - ((d.y / maxY) * (h - 40)) - 30;
         if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
     });
     ctx.stroke();
     
     // Fill gradient
     ctx.lineTo(w, h); ctx.lineTo(0, h);
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary') + '20'; // low opacity
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary') + '20';
     ctx.fill();
+    
+    // Labels
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted');
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('0', 0, h - 10);
+    ctx.fillText(data[data.length-1].x, w, h - 10);
 }
 
 // Icons SVG
@@ -825,7 +931,6 @@ function getIcon(name) {
     };
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">${icons[name]||''}</svg>`;
 }
-
 </script>
 </body>
 </html>
