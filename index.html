@@ -1,248 +1,831 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Auditor de Log de Urna</title>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Auditor de Integridade de Urna Eletrônica</title>
+<meta name="description" content="Ferramenta de auditoria independente de logs de urna eletrônica. Processamento local.">
 <style>
-:root{--bg:#f3f5f9;--pn:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--zb:#f8fafc;--nav:#0f1b33;--navt:#aab6cf;--ac:#3b5bdb;--ac2:#e0b73a;--ok:#15803d;--okb:#dcfce7;--wa:#b45309;--wab:#fef3c7;--er:#b91c1c;--erb:#fee2e2;--na:#64748b;--nab:#e2e8f0;--sh:0 1px 2px #0f172a10,0 4px 16px #0f172a0d}
-@media(prefers-color-scheme:dark){:root{--bg:#0b1120;--pn:#131c2e;--tx:#e5eaf4;--mu:#94a3b8;--bd:#25324a;--zb:#17223a;--nav:#070d1a;--ac:#7c9bff;--ok:#4ade80;--okb:#14532d66;--wa:#fbbf24;--wab:#78350f55;--er:#f87171;--erb:#7f1d1d55;--nab:#25324a;--sh:0 1px 2px #0006,0 6px 20px #0005}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:13.5px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-.hide{display:none!important}.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}.mu{color:var(--mu)}
-#landing{min-height:100vh;display:grid;place-items:center;padding:24px}
-.lp{max-width:640px;width:100%;text-align:center}.lp h1{font-size:30px;margin:14px 0 4px;letter-spacing:-.5px}.lp p{color:var(--mu);margin:.2em 0 1.2em}
-.logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#1e3a8a,#3b5bdb);display:inline-grid;place-items:center;box-shadow:0 8px 24px #3b5bdb55}
-#drop{background:var(--pn);border:2px dashed #94a3b8;border-radius:18px;padding:44px 20px;cursor:pointer;transition:.2s;box-shadow:var(--sh)}
-#drop:hover,#drop.on{border-color:var(--ac);transform:translateY(-2px)}#drop b{font-size:16px}
-.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px;text-align:left}.feat div{background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:12px;font-size:12px;color:var(--mu)}.feat b{display:block;color:var(--tx);font-size:13px;margin-bottom:2px}
-@media(max-width:700px){.feat{grid-template-columns:1fr}}
-code{background:var(--zb);border:1px solid var(--bd);padding:1px 6px;border-radius:5px;font-size:12px}
-#app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
-nav{background:var(--nav);color:var(--navt);padding:18px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:2px}
-nav .br{display:flex;gap:10px;align-items:center;color:#fff;font-weight:700;font-size:15px;padding:0 8px 16px;border-bottom:1px solid #ffffff18;margin-bottom:10px}
-nav .br i{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#1e3a8a,#3b5bdb);display:grid;place-items:center}
-nav small{padding:12px 10px 4px;font-size:10px;letter-spacing:1px;text-transform:uppercase;opacity:.55}
-nav button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;font-size:13px;font-weight:500}
-nav button:hover{background:#ffffff10;color:#fff}nav button.a{background:#3b5bdb;color:#fff}
-nav button .b{margin-left:auto;font-size:10.5px;padding:1px 7px;border-radius:99px;background:#ffffff22;color:#fff}nav button .b.e{background:var(--er)}nav button .b.w{background:#d97706}
-nav .ft{margin-top:auto;font-size:11px;padding:10px;opacity:.6;line-height:1.4}
-nav svg{width:16px;height:16px;flex:none}
-@media(max-width:900px){#app{grid-template-columns:1fr}nav{position:static;height:auto;flex-direction:row;flex-wrap:wrap}nav .br,nav small,nav .ft{display:none}}
-.main{min-width:0}
-.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 24px;background:var(--pn);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
-.top h1{margin:0;font-size:17px}.top .sub{color:var(--mu);font-size:12px}
-.top select,.bar input,.bar select,.f input,.f select{padding:8px 11px;border:1px solid var(--bd);border-radius:9px;background:var(--zb);color:var(--tx);font:inherit;outline:0}
-button.p,.bar button{cursor:pointer;border:0;background:var(--ac);color:#fff;padding:8px 14px;border-radius:9px;font:600 12.5px inherit;font-family:inherit}
-@media(prefers-color-scheme:dark){button.p,.bar button{color:#0b1120}}
-button.g{cursor:pointer;border:1px solid var(--bd);background:var(--pn);color:var(--tx);padding:8px 14px;border-radius:9px;font:600 12.5px inherit;font-family:inherit}
-section{padding:20px 24px 50px;max-width:1280px}
-.card{background:var(--pn);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--sh)}
-h2{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--mu);display:flex;gap:8px;align-items:center}h2:before{content:"";width:4px;height:14px;border-radius:2px;background:var(--ac)}
-.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
-.k{background:var(--pn);border:1px solid var(--bd);border-radius:14px;padding:13px 15px;box-shadow:var(--sh)}.k b{display:block;font-size:25px;line-height:1.2;font-variant-numeric:tabular-nums}.k span{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.6px}
-.k.ok{border-top:3px solid var(--ok)}.k.wa{border-top:3px solid var(--wa)}.k.er{border-top:3px solid var(--er)}.k.in{border-top:3px solid var(--ac)}
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}@media(max-width:1000px){.two{grid-template-columns:1fr}}
-canvas{width:100%;height:240px;display:block}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px}
-th{background:var(--zb);position:sticky;top:0;text-transform:uppercase;font-size:10.5px;letter-spacing:.6px;color:var(--mu);border-bottom:1px solid var(--bd);z-index:1}
-th,td{padding:7px 10px;text-align:left;vertical-align:top}td{border-bottom:1px solid var(--bd)}tbody tr:hover{background:var(--zb)}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.wrap{max-height:560px;overflow:auto;border:1px solid var(--bd);border-radius:10px}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap}
-.chip.ok{background:var(--okb);color:var(--ok)}.chip.warn{background:var(--wab);color:var(--wa)}.chip.err{background:var(--erb);color:var(--er)}.chip.na{background:var(--nab);color:var(--na)}.chip.INFO{background:var(--nab);color:var(--na)}.chip.ALERTA{background:var(--wab);color:var(--wa)}.chip.ERRO{background:var(--erb);color:var(--er)}
-tr.ALERTA td:first-child{box-shadow:inset 3px 0 var(--wa)}tr.ERRO td:first-child{box-shadow:inset 3px 0 var(--er)}
-.score{display:flex;gap:18px;align-items:center}.ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:20px;position:relative}.ring:after{content:"";position:absolute;inset:9px;background:var(--pn);border-radius:50%}.ring span{position:relative;z-index:1}
-.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.bar input[type=text],.bar input:not([type]){flex:1;min-width:200px}
-.tl{border-left:2px solid var(--bd);margin-left:6px}.tl div{position:relative;padding:2px 0 8px 18px}.tl div:before{content:"";position:absolute;left:-6px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--ac);border:2px solid var(--pn)}
-.tl div.w:before{background:var(--wa)}.tl div.e:before{background:var(--er)}.tl b{font-variant-numeric:tabular-nums}
-.f{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}.f label{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;display:block}.f input{width:100%;margin-top:3px}
-#modal{position:fixed;inset:0;background:#0008;display:grid;place-items:center;z-index:20;padding:20px}#modal>div{background:var(--pn);border-radius:14px;max-width:960px;width:100%;max-height:80vh;overflow:auto;padding:16px}
-tr.hl td{background:var(--wab)}
-.note{font-size:12px;color:var(--mu);margin-top:8px}
-@media print{nav,.top .noprint,.noprint,#modal{display:none!important}#app{display:block}.top{position:static}section.hide{display:none!important}body{background:#fff}.card,.k{box-shadow:none}.wrap{max-height:none;overflow:visible}#s-rp{display:block!important}}
-</style></head><body>
+/* --- DESIGN SYSTEM & VARS --- */
+:root {
+    --bg-body: #f0f2f5;
+    --bg-surface: #ffffff;
+    --bg-sidebar: #0f172a;
+    
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --text-inverse: #f8fafc;
+    
+    --border: #e2e8f0;
+    --primary: #2563eb; /* Azul Institucional */
+    --primary-hover: #1d4ed8;
+    --accent: #f59e0b;
+    
+    --success-bg: #dcfce7; --success-tx: #166534; --success-bd: #86efac;
+    --warning-bg: #fef3c7; --warning-tx: #92400e; --warning-bd: #fcd34d;
+    --error-bg:   #fee2e2; --error-tx:   #991b1b; --error-bd:   #fca5a5;
+    --info-bg:    #eff6ff;  --info-tx:    #1e40af; --info-bd:    #bfdbfe;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --radius: 8px;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
 
-<div id="landing"><div class="lp">
-<div class="logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5L16 9.5"/></svg></div>
-<h1>Auditor de Log de Urna</h1><p>Ferramenta independente de análise de logs de urna eletrônica. Processamento 100% local, nenhum dado sai do seu computador.</p>
-<div id="drop"><b>Solte o log aqui</b><p>aceita <code>.zip</code>, <code>.jez</code> ou <code>logd.dat</code> · ou clique para escolher</p><input id="f" type="file" hidden accept=".zip,.jez,.dat,.txt"></div>
-<div class="feat"><div><b>Auditoria automática</b>20+ verificações de integridade e consistência por dia de votação.</div><div><b>Conferência com o BU</b>Digite os totais do boletim e compare com o log.</div><div><b>Relatório</b>Exporte PDF (impressão) ou JSON dos achados.</div></div>
-<p class="note">Não é produto da Justiça Eleitoral. Os resultados oficiais são os do Boletim de Urna.</p>
-</div></div>
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-body: #0b1120; --bg-surface: #1e293b; --bg-sidebar: #020617;
+        --text-main: #f1f5f9; --text-muted: #94a3b8;
+        --border: #334155;
+        --primary: #3b82f6; --primary-hover: #60a5fa;
+        --success-bg: #064e3b; --success-tx: #ecfccb; --success-bd: #22c55e;
+        --warning-bg: #451a03; --warning-tx: #fef3c7; --warning-bd: #fbbf24;
+        --error-bg:   #450a0a; --error-tx:   #fee2e2; --error-bd:   #ef4444;
+        --info-bg:    #172554;  --info-tx:    #dbeafe;  --info-bd:    #3b82f6;
+    }
+}
 
+/* --- RESET & BASE --- */
+* { box-sizing: border-box; outline: none; }
+body { margin: 0; font-family: var(--font-sans); background: var(--bg-body); color: var(--text-main); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1,h2,h3,h4 { margin: 0; font-weight: 600; letter-spacing: -0.025em; }
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+input, select { font-family: inherit; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-main); padding: 8px 12px; border-radius: var(--radius); font-size: 13px; transition: .2s; }
+input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.2); }
+code { font-family: var(--font-mono); font-size: 0.9em; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; }
+
+/* --- UTILS --- */
+.hide { display: none !important; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; } .gap-4 { gap: 16px; }
+.mt-4 { margin-top: 16px; } .mb-4 { margin-bottom: 16px; }
+.text-right { text-align: right; }
+.w-full { width: 100%; }
+.font-mono { font-family: var(--font-mono); }
+.text-xs { font-size: 12px; } .text-sm { font-size: 14px; } .text-lg { font-size: 18px; } .text-xl { font-size: 24px; }
+.font-bold { font-weight: 700; }
+.mu { color: var(--text-muted); }
+
+/* --- LANDING PAGE --- */
+#landing { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top, var(--bg-body), var(--bg-surface)); }
+.landing-card { max-width: 600px; width: 100%; text-align: center; animation: fadeIn 0.5s ease-out; }
+.logo-mark { width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary), #1e40af); border-radius: 16px; margin: 0 auto 20px; display: grid; place-items: center; box-shadow: 0 10px 25px -5px rgba(37,99,235,0.4); }
+.drop-zone { border: 2px dashed var(--border); background: var(--bg-surface); border-radius: 16px; padding: 40px 20px; margin: 24px 0; transition: all 0.2s; cursor: pointer; position: relative; overflow: hidden; }
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--primary); background: var(--info-bg); transform: translateY(-2px); }
+.drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; text-align: left; margin-top: 32px; }
+.feat-item { background: var(--bg-surface); padding: 16px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+
+/* --- APP LAYOUT --- */
+#app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+aside { background: var(--bg-sidebar); color: var(--text-inverse); display: flex; flex-direction: column; padding: 20px 12px; position: sticky; top: 0; height: 100vh; z-index: 10; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 12px 24px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px; }
+.brand-icon { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; display: grid; place-items: center; }
+nav button { width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; color: #94a3b8; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: .2s; margin-bottom: 4px; }
+nav button svg { width: 18px; height: 18px; stroke-width: 2; }
+nav button:hover { background: rgba(255,255,255,0.05); color: #fff; }
+nav button.active { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+nav .badge { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.1); }
+nav .badge.err { background: #ef4444; color: white; }
+nav .badge.warn { background: #f59e0b; color: black; }
+.sidebar-footer { margin-top: auto; font-size: 11px; color: #64748b; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+main { display: flex; flex-direction: column; min-width: 0; }
+header { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 5; box-shadow: var(--shadow-sm); }
+.page-title h1 { font-size: 20px; }
+.page-title p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.content { padding: 32px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+/* --- COMPONENTS --- */
+.card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.kpi { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
+.kpi::after { content:''; position: absolute; top:0; left:0; width: 4px; height: 100%; }
+.kpi.ok::after { background: #22c55e; } .kpi.warn::after { background: #f59e0b; } .kpi.err::after { background: #ef4444; } .kpi.info::after { background: var(--primary); }
+.kpi b { font-size: 28px; display: block; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; }
+
+.btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: .2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main); } .btn-secondary:hover { background: var(--border); }
+
+.chip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.chip.OK { background: var(--success-bg); color: var(--success-tx); }
+.chip.ALERTA { background: var(--warning-bg); color: var(--warning-tx); }
+.chip.ERRO { background: var(--error-bg); color: var(--error-tx); }
+.chip.INFO { background: var(--info-bg); color: var(--info-tx); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-body); position: sticky; top: 0; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:hover td { background: rgba(0,0,0,0.02); }
+.wrap-table { max-height: 600px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+
+canvas { width: 100%; height: 250px; display: block; }
+
+/* --- MODAL --- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 50; display: grid; place-items: center; padding: 20px; }
+.modal-content { background: var(--bg-surface); width: 100%; max-width: 900px; max-height: 85vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); }
+.modal-body { padding: 24px; overflow-y: auto; }
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* --- PRINT --- */
+@media print {
+    aside, header .noprint, .modal-overlay { display: none !important; }
+    #app { display: block; }
+    main { width: 100%; }
+    .content { padding: 0; max-width: 100%; }
+    .card { break-inside: avoid; border: none; box-shadow: none; padding: 0; margin-bottom: 30px; }
+    body { background: white; color: black; font-size: 12pt; }
+    h1 { font-size: 18pt; }
+    .wrap-table { max-height: none; overflow: visible; border: none; }
+}
+@media (max-width: 900px) {
+    #app { grid-template-columns: 1fr; }
+    aside { display: none; } /* Mobile menu implementation omitted for brevity, keeping simple */
+    header { padding: 12px 16px; }
+    .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing">
+    <div class="landing-card">
+        <div class="logo-mark">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <h1 class="text-xl font-bold">Auditor de Log de Urna</h1>
+        <p class="mu mt-4">Ferramenta técnica independente para análise de integridade e consistência de arquivos <code>logd.dat</code>.<br>Processamento 100% local (Client-Side). Seus dados não saem deste computador.</p>
+        
+        <div class="drop-zone" id="dropzone">
+            <input type="file" id="fileInput" accept=".zip,.jez,.dat,.txt">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5" style="margin-bottom:12px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="font-bold text-lg">Clique ou arraste o arquivo aqui</div>
+            <div class="mu text-sm mt-4">Suporta .zip, .jez, logd.dat (descompactado)</div>
+        </div>
+
+        <div class="features">
+            <div class="feat-item"><b class="text-primary">Auditoria Automática</b><span class="text-xs mu">20+ verificações heurísticas de segurança e fluxo.</span></div>
+            <div class="feat-item"><b class="text-primary">Conferência BU</b><span class="text-xs mu">Comparação aritmética entre log e boletim de urna.</span></div>
+            <div class="feat-item"><b class="text-primary">Privacidade Total</b><span class="text-xs mu">JavaScript puro. Sem envio de dados para servidores.</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- APP -->
 <div id="app" class="hide">
-<nav id="nav"></nav>
-<div class="main">
- <div class="top"><div><h1 id="ttl"></h1><div class="sub" id="sub"></div></div>
-  <div class="noprint" style="display:flex;gap:8px;align-items:center"><span class="mu">Dia:</span><select id="daysel"></select><button class="g" id="newf">Abrir outro log</button></div></div>
- <section id="s-ov"></section><section id="s-au" class="hide"></section><section id="s-vt" class="hide"></section><section id="s-ti" class="hide"></section>
- <section id="s-bu" class="hide"></section><section id="s-lg" class="hide"></section><section id="s-al" class="hide"></section><section id="s-rp" class="hide"></section>
-</div></div>
-<div id="modal" class="hide"><div id="mbody"></div></div>
+    <aside>
+        <div class="brand">
+            <div class="brand-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="font-bold">Auditor v2.0</div>
+        </div>
+        <nav id="navMenu"></nav>
+        <div class="sidebar-footer">
+            Arquivo atual:<br>
+            <span id="currentFile" class="font-mono text-xs mu" style="word-break:break-all">...</span>
+            <button id="btnReset" class="text-xs mu" style="margin-top:8px; text-decoration:underline">Carregar outro arquivo</button>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div class="page-title">
+                <h1 id="pageTitle">Visão Geral</h1>
+                <p id="pageSub">Urna não selecionada</p>
+            </div>
+            <div class="flex items-center gap-4 noprint">
+                <select id="daySelect" class="text-sm" style="min-width:150px"></select>
+                <button class="btn btn-secondary" onclick="$('#app').classList.add('hide'); $('#landing').classList.remove('hide')">Novo Arquivo</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- SECTIONS -->
+            <section id="sec-overview"></section>
+            <section id="sec-audit" class="hide"></section>
+            <section id="sec-votes" class="hide"></section>
+            <section id="sec-timeline" class="hide"></section>
+            <section id="sec-bu" class="hide"></section>
+            <section id="sec-logs" class="hide"></section>
+            <section id="sec-alerts" class="hide"></section>
+            <section id="sec-report" class="hide"></section>
+        </div>
+    </main>
+</div>
+
+<div id="modal" class="modal-overlay hide" onclick="if(event.target===this)this.classList.add('hide')"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-let R=[],D={},days=[],sel='',fname='',AU={},cur='ov',built={};
-/* ---------- entrada ---------- */
-const drop=$('#drop'),inp=$('#f');drop.onclick=()=>inp.click();inp.onchange=e=>load(e.target.files[0]);
-drop.ondragover=e=>{e.preventDefault();drop.classList.add('on')};drop.ondragleave=()=>drop.classList.remove('on');
-drop.ondrop=e=>{e.preventDefault();drop.classList.remove('on');load(e.dataTransfer.files[0])};
-$('#newf').onclick=()=>{$('#app').classList.add('hide');$('#landing').classList.remove('hide');inp.value=''};
-async function unwrap(buf){for(let i=0;i<4;i++){const u=new Uint8Array(buf);if(u[0]===0x50&&u[1]===0x4B){const z=await JSZip.loadAsync(buf);const n=Object.keys(z.files).filter(k=>!z.files[k].dir);const p=n.find(k=>/logd\.dat$/i.test(k))||n.find(k=>/\.(jez|zip)$/i.test(k))||n[0];buf=await z.files[p].async('arraybuffer')}else break}return buf}
-async function load(file){if(!file)return;try{const buf=await unwrap(await file.arrayBuffer());fname=file.name;parse(new TextDecoder('latin1').decode(buf))}catch(e){alert('Falha ao ler o arquivo: '+e.message)}}
-/* ---------- análise ---------- */
-function parse(t){
- R=t.split(/\r?\n/).filter(Boolean).map((l,i)=>{const f=l.split('\t'),m=f[0].match(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+):(\d+)/);return m?{i,raw:f[0],d:new Date(+m[3],m[2]-1,+m[1],+m[4],+m[5],+m[6]),day:f[0].slice(0,10),tm:f[0].slice(11),lv:f[1],id:f[2],md:f[3],msg:f[4]||'',h:f[5]||''}:null}).filter(Boolean);
- if(!R.length){alert('Formato de log não reconhecido.');return}
- R.forEach((r,i)=>r.i=i);D={};R.forEach(r=>(D[r.day]=D[r.day]||{day:r.day,rows:[]}).rows.push(r));days=Object.keys(D);
- days.forEach(k=>analyze(D[k]));
- const vd=days.filter(k=>D[k].votes.length);sel=vd.at(-1)||days.at(-1);
- global();built={};
- $('#daysel').innerHTML=days.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${k}${D[k].votes.length?' · '+D[k].votes.length+' votos':''}</option>`).join('');
- $('#daysel').onchange=e=>{sel=e.target.value;built={};show(cur)};
- $('#landing').classList.add('hide');$('#app').classList.remove('hide');buildNav();show('ov')}
-function analyze(d){const rs=d.rows,all=m=>rs.filter(r=>m.test(r.msg)),one=m=>rs.find(r=>m.test(r.msg));
- d.votes=all(/^O voto do eleitor foi computado/);d.enab=all(/^Eleitor foi habilitado/);d.bio=all(/Tipo de habilitação do eleitor \[biométrica\]/).length;
- d.boots=all(/^Início das operações do logd/).length;d.zer=one(/Gerando relatório \[ZERÉSIMA\] \[INÍCIO\]/);d.closeConf=one(/Procedimento de encerramento confirmado/);d.closed=one(/^Votação encerrada/);
- d.buPrint=all(/Imprimindo relatório \[BU\]/).length;d.files=all(/Gerando arquivo de resultado \[.+?\] \+ \[Término\]/).map(r=>r.msg.match(/\[(.+?)\]/)[1]);
- d.cargos={};all(/^Voto confirmado para \[/).forEach(r=>{const c=r.msg.match(/\[(.+?)\]/)[1];d.cargos[c]=(d.cargos[c]||0)+1});
- d.manual=all(/habilitação manual/).length;d.mesHab=all(/Mesário .* habilitou o eleitor/).length;d.unlinked=all(/Não é possível associar a habilitação/).length;
- d.justif=all(/^Justificativa recebida/).length;d.tecla=all(/^Tecla indevida/).length;d.timeout=all(/^Timeout de reconhecimento/).length;d.cancel=all(/^Habilitação cancelada/).length;
- d.insp=all(/^Inspeção da urna iniciada/).length;d.mesReg=all(/Mesário \d+ registrado/).length;d.invalid=all(/Identificador do eleitor digitado inválido/).length;
- d.sig=all(/Verificação de assinatura/);d.sigBad=d.sig.filter(r=>!/SUCESSO/.test(r.msg));d.alerts=rs.filter(r=>r.lv!=='INFO');
- d.volts=all(/rede CA em \[([\d.]+)V\]/).map(r=>({t:r.d,v:+r.msg.match(/rede CA em \[([\d.]+)V\]/)[1],b:+(r.msg.match(/Bateria Interna com \[([\d.]+)V/)||[0,0])[1]}));
- d.first=d.votes[0],d.last=d.votes.at(-1);d.isVote=d.votes.length>0;
- d.bat=d.isVote?all(/^Urna operando na bateria interna/).filter(r=>r.d>=d.first.d&&(!d.closeConf||r.d<=d.closeConf.d)):[];
- d.cab=[];let st=null;rs.forEach(r=>{if(/^Eleitor foi habilitado/.test(r.msg))st=r;else if(/^O voto do eleitor foi computado/.test(r.msg)&&st){d.cab.push((r.d-st.d)/1000);st=null}});
- d.gaps=d.votes.slice(1).map((v,i)=>({m:(v.d-d.votes[i].d)/60000,a:d.votes[i],b:v}));d.maxgap=d.gaps.reduce((a,g)=>g.m>a.m?g:a,{m:0});
- d.carga=[...new Set(all(/Código de carga [\d.]+/).map(r=>r.msg.match(/Código de carga ([\d.]+)/)[1]))];
- d.turno=(one(/^Turno da UE/)||{msg:''}).msg.replace('Turno da UE: ','');}
-function global(){const sers=new Set(),cg=new Set(),ids=new Set();let back=0;
- R.forEach((r,i)=>{ids.add(r.id);if(i&&r.d<R[i-1].d)back++;let m=r.msg.match(/^Serial da MV: (\w+)/);if(m)sers.add(m[1]);m=r.msg.match(/Código de carga ([\d.]+)/);if(m)cg.add(m[1])});
- AU.g={ids:[...ids],back,sers:[...sers],cg:[...cg],sig:R.filter(r=>/Verificação de assinatura/.test(r.msg)),erros:R.filter(r=>r.lv==='ERRO')};AU.g.sigBad=AU.g.sig.filter(r=>!/SUCESSO/.test(r.msg))}
-const O=(t,d)=>({st:'ok',t,d}),W=(t,d)=>({st:'warn',t,d}),E=(t,d)=>({st:'err',t,d}),N=(t,d)=>({st:'na',t,d});
-function checksGlobal(){const g=AU.g,c=[];
- c.push(g.ids.length===1?O('Identificação única da urna',`Todos os registros pertencem à urna ${g.ids[0]}.`):E('Identificação única da urna',`Foram encontrados ${g.ids.length} identificadores: ${g.ids.join(', ')}.`));
- c.push(g.back===0?O('Cronologia do log',`${R.length} registros em ordem cronológica, sem retrocesso de relógio.`):E('Cronologia do log',`${g.back} retrocesso(s) de relógio detectado(s).`));
- c.push(!g.sig.length?N('Assinaturas digitais','Nenhuma verificação de assinatura registrada.'):g.sigBad.length===0?O('Assinaturas digitais',`${g.sig.length} verificações de assinatura, todas com SUCESSO.`):E('Assinaturas digitais',`${g.sigBad.length} de ${g.sig.length} verificações sem SUCESSO.`));
- c.push(g.sers.length<=1?O('Mídia de votação (serial)',g.sers.length?`Serial único ${g.sers[0]} em todos os acionamentos.`:'Serial não registrado.'):E('Mídia de votação (serial)',`Seriais distintos: ${g.sers.join(', ')}.`));
- c.push(g.cg.length<=1?O('Código de carga',g.cg.length?`Único código de carga: ${g.cg[0]}.`:'Não registrado.'):W('Código de carga',`Mais de um código de carga: ${g.cg.join(' | ')}.`));
- c.push(g.erros.length===0?O('Erros do sistema','Nenhum registro de nível ERRO.'):W('Erros do sistema',`${g.erros.length} registro(s) ERRO: ${[...new Set(g.erros.map(r=>r.msg))].join('; ')}.`));
- return c}
-function checksDay(d){const c=[];if(!d.isVote)return[N('Dia sem votação','Este dia não contém votos computados (carga, teste ou preparação).')];
- const f=d.first.d,l=d.last.d,hh=x=>x.getHours()*3600+x.getMinutes()*60+x.getSeconds();
- c.push(d.boots===1?O('Urna ligada uma única vez',`1 inicialização no dia.`):W('Reinicializações no dia',`${d.boots} inicializações da urna no mesmo dia (verificar interrupções).`));
- c.push(d.zer&&d.zer.d<f?O('Zerésima antes do 1º voto',`Zerésima às ${d.zer.tm}, primeiro voto às ${d.first.tm}.`):d.zer?E('Zerésima antes do 1º voto',`Zerésima às ${d.zer.tm} é posterior ao primeiro voto (${d.first.tm}).`):E('Zerésima','Não foi encontrada a emissão da zerésima.'));
- c.push(hh(f)>=8*3600?O('Votação iniciada a partir das 08:00',`Primeiro voto às ${d.first.tm}.`):E('Voto antes das 08:00',`Primeiro voto às ${d.first.tm}.`));
- c.push(hh(l)<=17*3600?O('Último voto até as 17:00',`Último voto às ${d.last.tm}.`):W('Voto após as 17:00',`Último voto às ${d.last.tm} (permitido apenas para eleitores presentes na fila).`));
- c.push(d.closeConf?(hh(d.closeConf.d)>=17*3600?O('Encerramento após as 17:00',`Encerramento confirmado às ${d.closeConf.tm}.`):E('Encerramento antes das 17:00',`Confirmado às ${d.closeConf.tm}.`)):E('Encerramento','Procedimento de encerramento não encontrado.'));
- const pc=d.rows.filter(r=>d.closeConf&&r.d>d.closeConf.d&&/^O voto do eleitor foi computado/.test(r.msg)).length;
- c.push(pc===0?O('Nenhum voto após o encerramento','Nenhum voto computado depois do encerramento.'):E('Votos após o encerramento',`${pc} voto(s) computado(s) após o encerramento.`));
- c.push(d.enab.length===d.votes.length?O('Habilitações = votos computados',`${d.enab.length} habilitações e ${d.votes.length} votos.`):E('Habilitações ≠ votos computados',`${d.enab.length} habilitações para ${d.votes.length} votos.`));
- const ck=Object.entries(d.cargos),bad=ck.filter(([k,v])=>v%d.votes.length);
- c.push(ck.length&&!bad.length?O('Confirmações por cargo coerentes',ck.map(([k,v])=>`${k}: ${v}`+(v>d.votes.length?` (${v/d.votes.length} por eleitor)`:'')).join(' · ')):ck.length?E('Confirmações por cargo incoerentes',bad.map(([k,v])=>`${k}: ${v} para ${d.votes.length} votos`).join('; ')):W('Cargos','Nenhuma confirmação de cargo encontrada.'));
- c.push(d.bat.length===0?O('Sem troca para bateria durante a votação','Urna permaneceu na rede elétrica.'):W('Troca para bateria durante a votação',`${d.bat.length} ocorrência(s): ${d.bat.map(r=>r.tm).join(', ')}.`));
- const vmin=Math.min(...d.volts.map(x=>x.v)),vmax=Math.max(...d.volts.map(x=>x.v));
- c.push(d.volts.length?O('Tensão da rede monitorada',`${d.volts.length} leituras entre ${vmin.toFixed(1)} V e ${vmax.toFixed(1)} V.`):N('Tensão da rede','Sem leituras periódicas.'));
- c.push(d.maxgap.m<=30?O('Fluxo de votos contínuo',`Maior intervalo entre votos: ${Math.round(d.maxgap.m)} min (${d.maxgap.a.tm} → ${d.maxgap.b.tm}).`):W('Intervalo longo entre votos',`${Math.round(d.maxgap.m)} min entre ${d.maxgap.a.tm} e ${d.maxgap.b.tm}.`));
- const fast=d.cab.filter(x=>x<3).length,slow=d.cab.filter(x=>x>300).length;
- c.push(!fast&&!slow?O('Tempo de cabine plausível',`Mín ${Math.min(...d.cab)} s · mediana ${med(d.cab)} s · máx ${Math.max(...d.cab)} s.`):W('Tempos de cabine atípicos',`${fast} voto(s) em menos de 3 s e ${slow} em mais de 5 min.`));
- const bp=d.votes.length?Math.round(100*d.bio/d.votes.length):0;
- c.push(bp>=50?O('Taxa de habilitação biométrica',`${d.bio} de ${d.votes.length} (${bp}%).`):W('Baixa habilitação biométrica',`${d.bio} de ${d.votes.length} (${bp}%).`));
- c.push(d.mesHab===0?O('Habilitações por mesário','Nenhuma habilitação feita por mesário.'):W('Habilitações por mesário',`${d.mesHab} eleitor(es) habilitado(s) pela digital de mesário (revisar).`));
- c.push(d.unlinked===0?O('Rastreabilidade de mesário','Todas as habilitações associadas.'):W('Habilitação sem mesário associável',`${d.unlinked} ocorrência(s): digital não associável a mesário.`));
- c.push(d.buPrint>=1?O('BU impresso',`${d.buPrint} via(s) do BU impressas.`):E('BU impresso','Nenhuma impressão de BU registrada.'));
- const need=['bu.dat','rdv.dat','hash.dat','imgbu.dat'],miss=need.filter(n=>!d.files.includes(n));
- c.push(!miss.length?O('Arquivos de resultado gerados',d.files.join(', ')+'.'):E('Arquivos de resultado ausentes',miss.join(', ')+'.'));
- c.push(d.closed?O('Votação encerrada',`Encerrada às ${d.closed.tm}.`):W('Votação encerrada','Registro "Votação encerrada" ausente (log truncado ou cópia obtida antes do término).'));
- c.push(d.alerts.length===0?O('Alertas do dia','Nenhum alerta.'):N('Alertas do dia',`${d.alerts.length} alerta(s)/erro(s) registrados (ver aba Alertas).`));
- return c}
-const med=a=>{const s=[...a].sort((x,y)=>x-y);return s.length?s[s.length>>1]:0};
-const cnt=(c,s)=>c.filter(x=>x.st===s).length;
-/* ---------- navegação ---------- */
-const IC={ov:'<path d="M3 12l9-8 9 8M5 10v10h14V10"/>',au:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5L16 9.5"/>',vt:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',ti:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',bu:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',lg:'<path d="M4 6h16M4 12h16M4 18h10"/>',al:'<path d="M12 3l10 18H2zM12 10v5M12 18v.5"/>',rp:'<path d="M6 3h9l4 4v14H6zM14 3v5h5"/>'};
-function buildNav(){const g=checksGlobal(),dd=checksDay(D[sel]),all=[...g,...dd],e=cnt(all,'err'),w=cnt(all,'warn'),al=R.filter(r=>r.lv!=='INFO').length;
- const it=[['ov','Visão geral'],['au','Auditoria',e?['e',e]:w?['w',w]:null],['vt','Votação e habilitação'],['ti','Linha do tempo'],['bu','Conferência com BU'],['lg','Log completo'],['al','Alertas e erros',al?['',al]:null],['rp','Relatório']];
- $('#nav').innerHTML=`<div class="br"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC.au}</svg></i>Auditor de Urna</div><small>Análise</small>`+it.slice(0,4).map(nb).join('')+'<small>Verificação</small>'+it.slice(4,5).map(nb).join('')+'<small>Dados</small>'+it.slice(5).map(nb).join('')+`<div class="ft">Ferramenta independente, sem vínculo com a Justiça Eleitoral.<br>Dados processados localmente.</div>`;
- $('#nav').onclick=e=>{const b=e.target.closest('button');if(b)show(b.dataset.s)}}
-const nb=([k,n,b])=>`<button data-s="${k}" class="${k===cur?'a':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>${n}${b?`<span class="b ${b[0]}">${b[1]}</span>`:''}</button>`;
-function show(k){cur=k;document.querySelectorAll('section').forEach(s=>s.classList.toggle('hide',s.id!=='s-'+k));buildNav();
- $('#ttl').textContent={ov:'Visão geral',au:'Auditoria automática',vt:'Votação e habilitação',ti:'Linha do tempo',bu:'Conferência com o Boletim de Urna',lg:'Log completo',al:'Alertas e erros',rp:'Relatório de auditoria'}[k];
- $('#sub').textContent=`Urna ${R[0].id} · ${fname} · ${R.length} registros · dia selecionado: ${sel}`;
- if(!built[k]){({ov,au,vt,ti,bu,lg,al,rp})[k]();built[k]=1}}
-/* ---------- gráficos ---------- */
-function cv(el){const r=devicePixelRatio||1,w=el.clientWidth,h=el.clientHeight;el.width=w*r;el.height=h*r;const x=el.getContext('2d');x.scale(r,r);const cs=getComputedStyle(document.body);return[x,w,h,cs.color,getComputedStyle(document.documentElement).getPropertyValue('--ac').trim()||'#3b5bdb']}
-function bars(el,labels,series,cols){const[x,w,h,tx]=cv(el);const mx=Math.max(1,...series.flat()),pw=(w-44)/labels.length,bw=Math.min(26,pw/(series.length+.6));x.font='11px system-ui';x.fillStyle=tx;x.strokeStyle=tx+'22';
- for(let i=0;i<=4;i++){const y=h-24-(h-40)*i/4;x.beginPath();x.moveTo(36,y);x.lineTo(w,y);x.stroke();x.fillText(Math.round(mx*i/4),4,y+4)}
- series.forEach((s,si)=>{x.fillStyle=cols[si];s.forEach((v,i)=>{const bh=(h-40)*v/mx;x.fillRect(40+i*pw+(pw-bw*series.length)/2+si*bw,h-24-bh,bw-1,bh)})});
- x.fillStyle=tx;x.textAlign='center';labels.forEach((l,i)=>x.fillText(l,40+i*pw+pw/2,h-8))}
-function lineC(el,pts,y0,y1,fmtx){const[x,w,h,tx,ac]=cv(el);if(!pts.length)return;const t0=pts[0][0],t1=pts.at(-1)[0]||t0+1;x.font='11px system-ui';x.fillStyle=tx;x.strokeStyle=tx+'22';
- for(let i=0;i<=4;i++){const y=h-24-(h-40)*i/4;x.beginPath();x.moveTo(44,y);x.lineTo(w,y);x.stroke();x.fillText((y0+(y1-y0)*i/4).toFixed(0),4,y+4)}
- x.strokeStyle=ac;x.lineWidth=2;x.beginPath();pts.forEach(([t,v],i)=>{const X=48+(w-58)*(t-t0)/(t1-t0||1),Y=h-24-(h-40)*(v-y0)/(y1-y0);i?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke();
- x.fillStyle=tx;x.textAlign='center';for(let i=0;i<=5;i++){const t=t0+(t1-t0)*i/5;x.fillText(fmtx(new Date(t)),48+(w-58)*i/5,h-8)}}
-const hm=d=>String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-const tbl=(h,rows,cls)=>`<div class="wrap"><table><thead><tr>${h.map(x=>`<th class="${x[1]?'n':''}">${x[0]||x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
-const chip=s=>({ok:'<span class="chip ok">✓ OK</span>',warn:'<span class="chip warn">! Atenção</span>',err:'<span class="chip err">✕ Falha</span>',na:'<span class="chip na">— Info</span>'}[s]);
-/* ---------- seções ---------- */
-function ov(){const d=D[sel],c=[...checksGlobal(),...checksDay(d)],tot=c.filter(x=>x.st!=='na').length,okn=cnt(c,'ok'),pct=tot?Math.round(100*okn/tot):100,col=cnt(c,'err')?'var(--er)':cnt(c,'warn')?'var(--wa)':'var(--ok)';
- const vts=days.filter(k=>D[k].isVote);
- $('#s-ov').innerHTML=`<div class="card"><div class="score"><div class="ring" style="background:conic-gradient(${col} ${pct*3.6}deg,var(--nab) 0)"><span>${pct}%</span></div><div><h2 style="margin:0 0 6px">Resultado da auditoria · ${sel}</h2><span class="chip ok">${okn} OK</span> <span class="chip warn">${cnt(c,'warn')} atenção</span> <span class="chip err">${cnt(c,'err')} falha</span><div class="note">Verificações automáticas sobre o log. Detalhes na aba Auditoria.</div></div></div></div>
- <div class="kg"><div class="k in"><b>${R.length}</b><span>Registros</span></div><div class="k in"><b>${R[0].id}</b><span>Urna</span></div><div class="k in"><b>${days.length}</b><span>Dias com registro</span></div><div class="k ok"><b>${vts.reduce((a,k)=>a+D[k].votes.length,0)}</b><span>Votos computados (todos os dias)</span></div><div class="k wa"><b>${R.filter(r=>r.lv==='ALERTA').length}</b><span>Alertas</span></div><div class="k er"><b>${R.filter(r=>r.lv==='ERRO').length}</b><span>Erros</span></div></div>
- <div class="two"><div class="card"><h2>Votos por hora</h2><canvas id="c1"></canvas><div id="lg1" class="note"></div></div><div class="card"><h2>Identificação</h2>${ident()}</div></div>
- <div class="card"><h2>Resumo por dia</h2>${tbl([['Data'],['Turno'],['Registros',1],['Votos',1],['Biométricos',1],['1º voto'],['Último voto'],['Encerramento'],['Alertas/erros',1]],days.map(k=>{const x=D[k];return`<tr><td>${k}</td><td>${x.turno||'—'}</td><td class="n">${x.rows.length}</td><td class="n">${x.votes.length}</td><td class="n">${x.bio}</td><td>${x.first?x.first.tm:'—'}</td><td>${x.last?x.last.tm:'—'}</td><td>${x.closeConf?x.closeConf.tm:'—'}</td><td class="n">${x.alerts.length}</td></tr>`}).join(''))}</div>`;
- const col2=['#3b5bdb','#e0b73a','#16a34a','#dc2626'],hs=[...Array(24).keys()].filter(h=>vts.some(k=>D[k].votes.some(v=>v.d.getHours()===h)));
- if(hs.length)bars($('#c1'),hs.map(h=>String(h).padStart(2,'0')+'h'),vts.map(k=>hs.map(h=>D[k].votes.filter(v=>v.d.getHours()===h).length)),col2),$('#lg1').innerHTML=vts.map((k,i)=>`<span style="color:${col2[i%4]}">■</span> ${k.slice(0,5)}`).join(' &nbsp; ')}
-function ident(){const g=re=>(R.find(r=>re.test(r.msg))||{msg:''}).msg.replace(/^[^:]+:\s*/,'');const rows=[['Modelo',g(/Modelo de Urna/)],['Aplicação',g(/Versão da aplicação/)],['Município',g(/^Município/)],['Zona',g(/^Zona/)],['Seção',g(/^Seção Eleitoral/)],['Código de carga',AU.g.cg.join(' | ')],['Serial da MV',AU.g.sers.join(' | ')],['Impressora',g(/Detectada impressora/).replace('com serial','')]].filter(x=>x[1]);
- return`<table><tbody>${rows.map(([a,b])=>`<tr><td class="mu" style="width:130px">${a}</td><td class="mono">${esc(b)}</td></tr>`).join('')}</tbody></table>`}
-function au(){const c=[['Verificações globais',checksGlobal()],['Verificações do dia '+sel,checksDay(D[sel])]];
- $('#s-au').innerHTML=c.map(([t,l])=>`<div class="card"><h2>${t}</h2>${tbl([['Status'],['Verificação'],['Detalhe']],l.map(x=>`<tr><td style="width:110px">${chip(x.st)}</td><td style="width:280px"><b>${x.t}</b></td><td>${esc(x.d)}</td></tr>`).join(''))}</div>`).join('')+'<div class="note">As verificações são heurísticas sobre o conteúdo do log. Não substituem a verificação oficial de assinatura e hash dos arquivos pela Justiça Eleitoral.</div>'}
-function vt(){const d=D[sel];if(!d.isVote){$('#s-vt').innerHTML='<div class="card">Este dia não tem votos computados. Escolha outro dia no seletor.</div>';return}
- const tot=d.votes.length,pc=n=>tot?(100*n/tot).toFixed(1)+'%':'—';
- $('#s-vt').innerHTML=`<div class="kg"><div class="k ok"><b>${tot}</b><span>Votos computados</span></div><div class="k in"><b>${d.bio} <small class="mu">${pc(d.bio)}</small></b><span>Habilitação biométrica</span></div><div class="k wa"><b>${tot-d.bio} <small class="mu">${pc(tot-d.bio)}</small></b><span>Sem biometria do eleitor*</span></div><div class="k in"><b>${d.justif}</b><span>Justificativas</span></div><div class="k in"><b>${med(d.cab)} s</b><span>Mediana na cabine</span></div><div class="k wa"><b>${d.tecla}</b><span>Teclas indevidas</span></div></div>
- <div class="two"><div class="card"><h2>Votos por hora</h2><canvas id="c2"></canvas></div><div class="card"><h2>Tempo na cabine (histograma)</h2><canvas id="c3"></canvas></div></div>
- <div class="two"><div class="card"><h2>Votos acumulados</h2><canvas id="c4"></canvas></div><div class="card"><h2>Tensão da rede (V)</h2><canvas id="c5"></canvas></div></div>
- <div class="two"><div class="card"><h2>Confirmações por cargo</h2>${tbl([['Cargo'],['Confirmações',1],['Por eleitor',1]],Object.entries(d.cargos).map(([k,v])=>`<tr><td>${k}</td><td class="n">${v}</td><td class="n">${(v/tot).toFixed(2)}</td></tr>`).join(''))}</div>
- <div class="card"><h2>Indicadores operacionais</h2>${tbl([['Indicador'],['Valor',1]],[['Pedidos de habilitação manual',d.manual],['Habilitações canceladas',d.cancel],['Habilitadas por mesário',d.mesHab],['Timeouts de leitura de dedo',d.timeout],['Identificadores inválidos',d.invalid],['Inspeções da urna',d.insp],['Mesários registrados',d.mesReg],['Maior intervalo entre votos (min)',Math.round(d.maxgap.m)]].map(([a,b])=>`<tr><td>${a}</td><td class="n">${b}</td></tr>`).join(''))}</div></div>
- <div class="note">*Votos menos habilitações com “Tipo de habilitação [biométrica]” (inferência do log; o BU separa biográfica de sem biometria).</div>`;
- const hs=[...Array(24).keys()].filter(h=>d.votes.some(v=>v.d.getHours()===h));bars($('#c2'),hs.map(h=>String(h).padStart(2,'0')+'h'),[hs.map(h=>d.votes.filter(v=>v.d.getHours()===h).length)],['#3b5bdb']);
- const mx=Math.max(...d.cab),bins=Math.min(12,Math.ceil(mx/10)||1),bw=Math.ceil((mx+1)/bins),hist=Array(bins).fill(0);d.cab.forEach(v=>hist[Math.min(bins-1,Math.floor(v/bw))]++);bars($('#c3'),hist.map((_,i)=>i*bw+'s'),[hist],['#e0b73a']);
- lineC($('#c4'),d.votes.map((v,i)=>[+v.d,i+1]),0,tot,hm);
- const vp=d.volts.map(x=>[+x.t,x.v]);if(vp.length){const lo=Math.floor(Math.min(...vp.map(p=>p[1]))-5),hi=Math.ceil(Math.max(...vp.map(p=>p[1]))+5);lineC($('#c5'),vp,lo,hi,hm)}}
-function ti(){const d=D[sel],ms=[/^Urna ligada em/,/Código de carga .* gravado/,/Urna testada com sucesso/,/Urna transitada para 2º Turno/,/Gerando relatório \[ZERÉSIMA\] \[INÍCIO\]/,/Registrando mesários/,/^Operador selecionou: Encerrar/,/Encerramento só pode/,/Título digitado para encerramento/,/Procedimento de encerramento confirmado/,/Imprimindo relatório \[BU\] via nº \[1\]/,/Mesário indicou qualidade OK/,/Gerando arquivo de resultado \[(bu|rdv|hash)\.dat\] \+ \[Término\]/,/^Votação encerrada/,/Urna desligada pela chave/,/^Inspeção da urna iniciada/,/bateria interna/,/Digital coletada bate/,/habilitou o eleitor/];
- const ev=d.rows.filter(r=>ms.some(m=>m.test(r.msg))||r.lv!=='INFO');if(d.isVote){ev.push(d.first,d.last)}ev.sort((a,b)=>a.i-b.i);
- const u=[...new Set(ev)].map(r=>`<div class="${r.lv==='ERRO'?'e':r.lv==='ALERTA'?'w':''}"><b>${r.tm}</b> <span class="chip ${r.lv}">${r.lv}</span> ${esc(r.msg.replace(/Título digitado para encerramento: \d+/,'Título digitado para encerramento: ***'))}${r===d.first?' <span class="chip ok">1º voto</span>':''}${r===d.last?' <span class="chip ok">último voto</span>':''}</div>`).join('');
- $('#s-ti').innerHTML=`<div class="card"><h2>Marcos e ocorrências · ${sel}</h2><div class="tl">${u||'Sem eventos.'}</div><div class="note">Números de título de mesário são ocultados nesta visão.</div></div>`}
-function bu(){const d=D[sel];$('#s-bu').innerHTML=`<div class="card"><h2>Dados do Boletim de Urna (digite do BU impresso ou do site)</h2><div class="f">${[['bUE','Código da urna'],['bCar','Código de carga'],['bCom','Comparecimento'],['bBio','Habilitação biométrica'],['bBg','Habilitação biográfica'],['bSb','Habilitação sem biometria'],['bApt','Eleitores aptos'],['bFal','Faltosos'],['bNom','Votos nominais'],['bLeg','Votos de legenda'],['bBra','Votos em branco'],['bNul','Votos nulos'],['bFec','Fechamento (hh:mm:ss)']].map(([i,l])=>`<div><label>${l}</label><input id="${i}"></div>`).join('')}</div><div class="note">Compara com o log do dia ${sel} e confere a aritmética do próprio BU. Campos vazios são ignorados.</div></div><div class="card"><h2>Resultado da conferência</h2><div id="bres"></div></div>`;
- const g=i=>$('#'+i).value.trim(),n=i=>g(i)===''?null:+g(i);
- const run=()=>{const L=[],cmp=(t,a,b,fmt=x=>x)=>{if(a===''||a===null)return;L.push({st:String(a)===String(b)?'ok':'err',t,d:`BU: ${fmt(a)} · Log: ${b===undefined||b===''?'—':fmt(b)}`})};
-  cmp('Código da urna',g('bUE'),R[0].id);cmp('Código de carga',g('bCar'),d.carga[0]||AU.g.cg[0]);cmp('Comparecimento',n('bCom'),d.votes.length);cmp('Habilitação biométrica',n('bBio'),d.bio);
-  if(n('bBg')!==null&&n('bSb')!==null)cmp('Biográfica + sem biometria',n('bBg')+n('bSb'),d.votes.length-d.bio);
-  if(g('bFec'))cmp('Fechamento',g('bFec'),d.closeConf?d.closeConf.tm:'—');
-  const com=n('bCom'),s=(...a)=>a.reduce((x,y)=>x+(y||0),0);
-  if(com!==null&&n('bBio')!==null&&n('bBg')!==null&&n('bSb')!==null)L.push({st:s(n('bBio'),n('bBg'),n('bSb'))===com?'ok':'err',t:'Aritmética: habilitações = comparecimento',d:`${s(n('bBio'),n('bBg'),n('bSb'))} vs ${com}`});
-  if(com!==null&&n('bApt')!==null&&n('bFal')!==null)L.push({st:n('bApt')-com===n('bFal')?'ok':'err',t:'Aritmética: aptos − comparecimento = faltosos',d:`${n('bApt')} − ${com} = ${n('bApt')-com} vs ${n('bFal')}`});
-  if(com!==null&&n('bNom')!==null&&n('bBra')!==null&&n('bNul')!==null)L.push({st:s(n('bNom'),n('bLeg'),n('bBra'),n('bNul'))===com?'ok':'err',t:'Aritmética: nominais + legenda + brancos + nulos = comparecimento',d:`${s(n('bNom'),n('bLeg'),n('bBra'),n('bNul'))} vs ${com}`});
-  $('#bres').innerHTML=L.length?tbl([['Status'],['Conferência'],['Detalhe']],L.map(x=>`<tr><td style="width:110px">${chip(x.st)}</td><td><b>${x.t}</b></td><td>${esc(x.d)}</td></tr>`).join('')):'<span class="mu">Preencha ao menos um campo.</span>';window.BUL=L};
- document.querySelectorAll('#s-bu input').forEach(i=>i.oninput=run);run()}
-let F=[],shown=0;
-function lg(){$('#s-lg').innerHTML=`<div class="card"><div class="bar"><input id="q" placeholder="Buscar (texto ou regex)…"><label><input type="checkbox" id="rx" style="width:auto"> regex</label><select id="lv"><option value="">Nível</option>${[...new Set(R.map(r=>r.lv))].map(v=>`<option>${v}</option>`).join('')}</select><select id="md"><option value="">Módulo</option>${[...new Set(R.map(r=>r.md))].map(v=>`<option>${v}</option>`).join('')}</select><select id="dy"><option value="">Todas as datas</option>${days.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('')}</select><label><input type="checkbox" id="hs" style="width:auto"> hash</label><span id="cnt" class="mu mono"></span></div>
- <div class="wrap"><table><thead><tr><th>Data/hora</th><th>Nível</th><th>Mód.</th><th>Mensagem</th><th class="hh hide">Hash</th></tr></thead><tbody id="tb"></tbody></table></div><div class="bar" style="margin-top:10px"><button id="more">Mostrar mais</button><button class="g" id="csv">Exportar CSV</button><span class="note">Clique em uma linha para ver o contexto.</span></div></div>`;
- ['q','rx','lv','md','dy'].forEach(i=>$('#'+i).oninput=ap);$('#hs').onchange=e=>document.querySelectorAll('.hh').forEach(x=>x.classList.toggle('hide',!e.target.checked));
- $('#more').onclick=more;$('#tb').onclick=e=>{const tr=e.target.closest('tr');if(tr)ctx(+tr.dataset.i)};
- $('#csv').onclick=()=>{const c='data_hora;nivel;modulo;mensagem;hash\n'+F.map(r=>[r.raw,r.lv,r.md,'"'+r.msg.replace(/"/g,'""')+'"',r.h].join(';')).join('\n');dl('log_filtrado.csv',c,'text/csv')};ap()}
-function ap(){let q=$('#q').value,rx=null;if(q&&$('#rx').checked){try{rx=new RegExp(q,'i')}catch(e){}}q=q.toLowerCase();const lv=$('#lv').value,md=$('#md').value,dy=$('#dy').value;
- F=R.filter(r=>(!lv||r.lv===lv)&&(!md||r.md===md)&&(!dy||r.day===dy)&&(!q||(rx?rx.test(r.msg):r.msg.toLowerCase().includes(q))));shown=0;$('#tb').innerHTML='';more()}
-function more(){const s=F.slice(shown,shown+300);shown+=s.length;const hh=$('#hs').checked;$('#tb').insertAdjacentHTML('beforeend',s.map(r=>`<tr data-i="${r.i}" class="${r.lv!=='INFO'?r.lv:''}" style="cursor:pointer"><td class="mono">${r.raw}</td><td><span class="chip ${r.lv}">${r.lv}</span></td><td>${r.md}</td><td>${esc(r.msg)}</td><td class="hh mono mu ${hh?'':'hide'}">${r.h}</td></tr>`).join(''));$('#cnt').textContent=`${shown} de ${F.length}`;$('#more').style.display=shown<F.length?'':'none'}
-function ctx(i){const s=R.slice(Math.max(0,i-8),i+9);$('#mbody').innerHTML=`<div class="bar"><b>Contexto do registro #${i+1}</b><span style="flex:1"></span><button class="g" onclick="$('#modal').classList.add('hide')">Fechar</button></div>`+tbl([['Data/hora'],['Nível'],['Mensagem']],s.map(r=>`<tr class="${r.i===i?'hl':''}"><td class="mono">${r.raw}</td><td><span class="chip ${r.lv}">${r.lv}</span></td><td>${esc(r.msg)}</td></tr>`).join(''));$('#modal').classList.remove('hide')}
-$('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.add('hide')};
-function al(){const a=R.filter(r=>r.lv!=='INFO'),g={};a.forEach(r=>{const k=r.lv+'|'+r.md+'|'+r.msg;(g[k]=g[k]||[]).push(r)});
- $('#s-al').innerHTML=`<div class="card"><h2>Alertas e erros agrupados (${a.length})</h2>${tbl([['Nível'],['Qtd',1],['Mód.'],['Mensagem'],['Ocorrências']],Object.entries(g).sort((x,y)=>(y[0][0]==='E')-(x[0][0]==='E')||y[1].length-x[1].length).map(([k,v])=>{const[l,m,s]=k.split('|');return`<tr class="${l}"><td><span class="chip ${l}">${l}</span></td><td class="n">${v.length}</td><td>${m}</td><td>${esc(s)}</td><td class="mono">${v.slice(0,8).map(r=>`<a href="#" onclick="ctx(${r.i});return false" style="color:var(--ac)">${r.raw}</a>`).join('<br>')}${v.length>8?'<br>…':''}</td></tr>`}).join(''))}</div>`}
-function rp(){const g=checksGlobal(),d=D[sel],dd=checksDay(d),all=[...g,...dd],now=new Date().toLocaleString('pt-BR');
- const sec=(t,l)=>`<h2>${t}</h2>${tbl([['Status'],['Verificação'],['Detalhe']],l.map(x=>`<tr><td style="width:100px">${chip(x.st)}</td><td><b>${x.t}</b></td><td>${esc(x.d)}</td></tr>`).join(''))}`;
- $('#s-rp').innerHTML=`<div class="card"><div class="bar noprint"><button class="p" onclick="window.print()">Imprimir / salvar PDF</button><button class="g" id="jsn">Exportar JSON</button></div>
- <h2>Relatório de auditoria de log · urna ${R[0].id}</h2><p>Arquivo <b>${esc(fname)}</b> · ${R.length} registros · período ${days[0]} a ${days.at(-1)} · dia auditado <b>${sel}</b> · gerado em ${now}.</p>
- <p><span class="chip ok">${cnt(all,'ok')} OK</span> <span class="chip warn">${cnt(all,'warn')} atenção</span> <span class="chip err">${cnt(all,'err')} falha</span></p>${sec('Verificações globais',g)}<br>${sec('Verificações do dia '+sel,dd)}
- ${d.isVote?`<br><h2>Números do dia</h2><p>Votos computados: <b>${d.votes.length}</b> · biométricos: <b>${d.bio}</b> · sem biometria do eleitor: <b>${d.votes.length-d.bio}</b> · justificativas: <b>${d.justif}</b> · 1º voto ${d.first.tm} · último voto ${d.last.tm} · encerramento ${d.closeConf?d.closeConf.tm:'—'}.</p>`:''}
- ${window.BUL&&window.BUL.length?`<br>${sec('Conferência com o BU',window.BUL)}`:''}
- <p class="note">Ferramenta independente, sem vínculo com a Justiça Eleitoral. Análise heurística do conteúdo do log; não substitui a verificação oficial de assinaturas e hashes. O log não revela o voto de nenhum eleitor.</p></div>`;
- $('#jsn').onclick=()=>dl('auditoria_'+sel.replace(/\//g,'-')+'.json',JSON.stringify({arquivo:fname,urna:R[0].id,dia:sel,gerado:new Date().toISOString(),globais:g,dia_checks:dd,bu:window.BUL||[],votos:d.votes.length,biometricos:d.bio},null,1),'application/json')}
-function dl(n,c,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t==='text/csv'?'﻿'+c:c],{type:t}));a.download=n;a.click()}
-</script></body></html>
+/**
+ * AUDITOR DE LOG DE URNA - CORE ENGINE
+ * Arquitetura: Parser -> Analyzer -> Renderer
+ */
+
+// --- HELPERS ---
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const fmtDate = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+const fmtTime = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+
+// --- STATE ---
+let RAW_LOGS = [];
+let PARSED_DAYS = {};
+let ACTIVE_DAY = '';
+let CURRENT_FILE = '';
+let GLOBAL_AUDIT = {};
+let CURRENT_VIEW = 'overview';
+
+// --- FILE HANDLING ---
+const dropZone = $('#dropzone');
+const fileInput = $('#fileInput');
+
+['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('dragover'); }));
+['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('dragover'); }));
+dropZone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+$('#btnReset').onclick = () => { location.reload(); };
+
+async function handleFiles(files) {
+    if (!files.length) return;
+    const file = files[0];
+    CURRENT_FILE = file.name;
+    $('#currentFile').textContent = file.name;
+    
+    try {
+        let buffer = await file.arrayBuffer();
+        // Auto-unzip logic
+        const u8 = new Uint8Array(buffer);
+        if (u8[0] === 0x50 && u8[1] === 0x4B) { // ZIP magic number
+            const zip = await JSZip.loadAsync(buffer);
+            // Find logd.dat or first dat/txt file
+            const target = Object.keys(zip.files).find(k => /logd\.dat$/i.test(k)) || 
+                           Object.keys(zip.files).find(k => /\.(dat|txt)$/i.test(k));
+            if (!target) throw new Error("Nenhum arquivo de log encontrado dentro do ZIP.");
+            buffer = await zip.files[target].async('arraybuffer');
+        }
+        
+        const text = new TextDecoder('latin1').decode(buffer); // Latin1 is common for older systems
+        processLog(text);
+        
+        $('#landing').classList.add('hide');
+        $('#app').classList.remove('hide');
+        renderNav();
+        switchView('overview');
+    } catch (err) {
+        alert("Erro ao processar arquivo: " + err.message);
+        console.error(err);
+    }
+}
+
+// --- PARSER ---
+function processLog(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    RAW_LOGS = lines.map((line, idx) => {
+        const parts = line.split('\t');
+        // Expected: Date/Time \t Level \t Module \t Message \t Hash(Optional)
+        if (parts.length < 4) return null;
+        
+        const dateMatch = parts[0].match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/);
+        if (!dateMatch) return null;
+        
+        return {
+            idx,
+            raw: parts[0],
+            date: new Date(+dateMatch[3], dateMatch[2]-1, +dateMatch[1], +dateMatch[4], +dateMatch[5], +dateMatch[6]),
+            dayKey: `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`, // ISO-ish for sorting
+            level: parts[1],
+            module: parts[2],
+            msg: parts[3],
+            hash: parts[4] || ''
+        };
+    }).filter(Boolean);
+
+    // Group by Day
+    PARSED_DAYS = {};
+    RAW_LOGS.forEach(r => {
+        if (!PARSED_DAYS[r.dayKey]) PARSED_DAYS[r.dayKey] = [];
+        PARSED_DAYS[r.dayKey].push(r);
+    });
+
+    // Analyze each day
+    Object.keys(PARSED_DAYS).forEach(day => analyzeDay(day));
+    
+    // Global Analysis
+    analyzeGlobal();
+
+    // Setup Select
+    const days = Object.keys(PARSED_DAYS).sort();
+    const select = $('#daySelect');
+    select.innerHTML = days.map(d => `<option value="${d}">${fmtDate(PARSED_DAYS[d][0].date)} (${PARSED_DAYS[d].filter(r=>r.msg.includes('computado')).length} votos)</option>`).join('');
+    
+    // Set Active Day (prefer last day with votes)
+    const votingDays = days.filter(d => PARSED_DAYS[d].some(r => r.msg.includes('O voto do eleitor foi computado')));
+    ACTIVE_DAY = votingDays.length ? votingDays[votingDays.length-1] : days[days.length-1];
+    
+    select.onchange = (e) => { ACTIVE_DAY = e.target.value; renderActiveView(); };
+}
+
+// --- ANALYZER LOGIC ---
+function analyzeDay(dayKey) {
+    const logs = PARSED_DAYS[dayKey];
+    const data = {
+        key: dayKey,
+        logs: logs,
+        votes: logs.filter(r => r.msg.startsWith('O voto do eleitor foi computado')),
+        enables: logs.filter(r => r.msg.startsWith('Eleitor foi habilitado')),
+        bioEnables: logs.filter(r => r.msg.includes('biométrica')),
+        bootCount: logs.filter(r => r.msg.includes('Início das operações')).length,
+        zeroReport: logs.find(r => r.msg.includes('ZERÉSIMA')),
+        closing: logs.find(r => r.msg.includes('Procedimento de encerramento confirmado')),
+        endVote: logs.find(r => r.msg.includes('Votação encerrada')),
+        buPrints: logs.filter(r => r.msg.includes('Imprimindo relatório [BU]')),
+        filesGen: logs.filter(r => r.msg.match(/Gerando arquivo de resultado/)).map(r => r.msg.match(/\[(.*?)\]/)[1]),
+        cargos: {},
+        issues: []
+    };
+
+    // Count Cargos
+    logs.filter(r => r.msg.startsWith('Voto confirmado para')).forEach(r => {
+        const cargo = r.msg.match(/\[(.*?)\]/)[1];
+        data.cargos[cargo] = (data.cargos[cargo] || 0) + 1;
+    });
+
+    // Heuristics Checks
+    if (data.votes.length > 0) {
+        const firstVote = data.votes[0];
+        const lastVote = data.votes[data.votes.length-1];
+        
+        // Time checks
+        if (firstVote.date.getHours() < 8) data.issues.push({type:'ERRO', msg:`Primeiro voto às ${fmtTime(firstVote.date)} (antes das 08:00)`});
+        if (lastVote.date.getHours() >= 17 && lastVote.date.getMinutes() > 0) {
+             // Simplified check, real rule allows queue
+             // data.issues.push({type:'ALERTA', msg:`Voto após 17:00 detectado.`});
+        }
+
+        // Zero Report Check
+        if (!data.zeroReport) data.issues.push({type:'ERRO', msg:'Zerésima não encontrada.'});
+        else if (data.zeroReport.date > firstVote.date) data.issues.push({type:'ERRO', msg:'Zerésima impressa APÓS o primeiro voto.'});
+
+        // Consistency
+        if (data.enables.length !== data.votes.length) data.issues.push({type:'ERRO', msg:`Divergência: ${data.enables.length} habilitações vs ${data.votes.length} votos.`});
+        
+        // Files
+        const requiredFiles = ['bu.dat', 'rdv.dat', 'hash.dat'];
+        const missing = requiredFiles.filter(f => !data.filesGen.includes(f));
+        if (missing.length) data.issues.push({type:'ERRO', msg:`Arquivos ausentes: ${missing.join(', ')}`});
+
+        // Battery
+        const battEvents = logs.filter(r => r.msg.includes('operando na bateria interna'));
+        if (battEvents.length > 0) data.issues.push({type:'ALERTA', msg:`Urna operou na bateria em ${battEvents.length} momento(s).`});
+    } else {
+        // Non-voting day checks (setup/test)
+    }
+
+    PARSED_DAYS[dayKey].meta = data;
+}
+
+function analyzeGlobal() {
+    const urnIds = [...new Set(RAW_LOGS.map(r => r.msg.match(/^Identificação da urna: (.+)/)?.[1]).filter(Boolean))];
+    const serials = [...new Set(RAW_LOGS.map(r => r.msg.match(/Serial da MV: (\w+)/)?.[1]).filter(Boolean))];
+    const loadCodes = [...new Set(RAW_LOGS.map(r => r.msg.match(/Código de carga ([\d.]+)/)?.[1]).filter(Boolean))];
+    
+    GLOBAL_AUDIT = {
+        urnId: urnIds[0] || 'Desconhecida',
+        uniqueUrn: urnIds.length <= 1,
+        uniqueSerial: serials.length <= 1,
+        uniqueLoad: loadCodes.length <= 1,
+        timeJumps: 0 // Simplified
+    };
+
+    // Check time jumps
+    for(let i=1; i<RAW_LOGS.length; i++) {
+        if (RAW_LOGS[i].date < RAW_LOGS[i-1].date) GLOBAL_AUDIT.timeJumps++;
+    }
+}
+
+// --- RENDERER ---
+function renderNav() {
+    const meta = PARSED_DAYS[ACTIVE_DAY].meta;
+    const totalIssues = meta.issues.length;
+    const errs = meta.issues.filter(i => i.type === 'ERRO').length;
+    
+    const menu = [
+        {id:'overview', icon:'layout', label:'Visão Geral'},
+        {id:'audit', icon:'shield-check', label:'Auditoria', badge: totalIssues ? `<span class="badge ${errs?'err':'warn'}">${totalIssues}</span>` : '<span class="badge" style="background:#22c55e;color:white">OK</span>'},
+        {id:'votes', icon:'bar-chart-2', label:'Votação'},
+        {id:'timeline', icon:'clock', label:'Linha do Tempo'},
+        {id:'bu', icon:'printer', label:'Conferência BU'},
+        {id:'logs', icon:'list', label:'Logs Completos'},
+        {id:'report', icon:'file-text', label:'Relatório'}
+    ];
+
+    $('#navMenu').innerHTML = menu.map(m => `
+        <button onclick="switchView('${m.id}')" class="${CURRENT_VIEW===m.id?'active':''}" id="nav-${m.id}">
+            ${getIcon(m.icon)} ${m.label} ${m.badge||''}
+        </button>
+    `).join('');
+}
+
+function switchView(viewId) {
+    CURRENT_VIEW = viewId;
+    document.querySelectorAll('section').forEach(el => el.classList.add('hide'));
+    $(`#sec-${viewId}`).classList.remove('hide');
+    
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    $(`#nav-${viewId}`)?.classList.add('active');
+    
+    const titles = {
+        overview: 'Painel de Controle',
+        audit: 'Resultados da Auditoria Automática',
+        votes: 'Análise de Votos e Biometria',
+        timeline: 'Cronologia dos Eventos',
+        bu: 'Conferência com Boletim de Urna',
+        logs: 'Explorador de Logs',
+        report: 'Relatório Técnico'
+    };
+    
+    $('#pageTitle').textContent = titles[viewId];
+    $('#pageSub').textContent = `Urna: ${GLOBAL_AUDIT.urnId} | Dia: ${fmtDate(PARSED_DAYS[ACTIVE_DAY][0].date)}`;
+    
+    renderActiveView();
+}
+
+function renderActiveView() {
+    const meta = PARSED_DAYS[ACTIVE_DAY].meta;
+    
+    if (CURRENT_VIEW === 'overview') renderOverview(meta);
+    else if (CURRENT_VIEW === 'audit') renderAudit(meta);
+    else if (CURRENT_VIEW === 'votes') renderVotes(meta);
+    else if (CURRENT_VIEW === 'timeline') renderTimeline(meta);
+    else if (CURRENT_VIEW === 'bu') renderBU(meta);
+    else if (CURRENT_VIEW === 'logs') renderLogs();
+    else if (CURRENT_VIEW === 'report') renderReport(meta);
+    
+    renderNav(); // Update badges if needed
+}
+
+// --- SPECIFIC VIEWS ---
+
+function renderOverview(meta) {
+    const kpis = [
+        {label:'Total Registros', val: meta.logs.length, type:'info'},
+        {label:'Votos Computados', val: meta.votes.length, type:'ok'},
+        {label:'Biometria', val: meta.bioEnables.length, sub: meta.votes.length ? Math.round(100*meta.bioEnables.length/meta.votes.length)+'%' : '', type:'info'},
+        {label:'Alertas/Erros', val: meta.issues.length, type: meta.issues.some(i=>i.type==='ERRO')?'err':'warn'}
+    ];
+
+    $('#sec-overview').innerHTML = `
+        <div class="kpi-grid">
+            ${kpis.map(k => `
+                <div class="kpi ${k.type}">
+                    <b>${k.val}</b>
+                    <span>${k.label} ${k.sub?`<small>(${k.sub})</small>`:''}</span>
+                </div>
+            `).join('')}
+        </div>
+        
+        <div class="flex gap-4" style="flex-wrap:wrap">
+            <div class="card" style="flex:2">
+                <h3>Fluxo de Votos por Hora</h3>
+                <canvas id="chartVotesHour"></canvas>
+            </div>
+            <div class="card" style="flex:1">
+                <h3>Distribuição por Cargo</h3>
+                <div class="wrap-table" style="max-height:250px">
+                    <table>
+                        <thead><tr><th>Cargo</th><th class="text-right">Qtd</th></tr></thead>
+                        <tbody>
+                            ${Object.entries(meta.cargos).map(([c,q]) => `<tr><td>${esc(c)}</td><td class="text-right font-mono">${q}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Draw Chart
+    setTimeout(() => {
+        const hours = Array(24).fill(0);
+        meta.votes.forEach(v => hours[v.date.getHours()]++);
+        drawBarChart($('#chartVotesHour'), hours.map((v,i)=>({x:i+'h', y:v})));
+    }, 50);
+}
+
+function renderAudit(meta) {
+    const rows = meta.issues.length ? meta.issues.map(i => `
+        <tr>
+            <td><span class="chip ${i.type}">${i.type}</span></td>
+            <td>${esc(i.msg)}</td>
+        </tr>
+    `).join('') : `<tr><td colspan="2" class="text-center mu" style="padding:20px">Nenhuma inconsistência crítica detectada neste dia.</td></tr>`;
+
+    $('#sec-audit').innerHTML = `
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h3>Verificações de Integridade</h3>
+                <span class="text-xs mu">Baseado em heurísticas de log padrão TSE</span>
+            </div>
+            <div class="wrap-table">
+                <table>
+                    <thead><tr><th style="width:100px">Severidade</th><th>Descrição do Evento</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Status Global do Arquivo</h3>
+            <ul style="list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:10px; margin-top:10px">
+                <li class="flex items-center gap-2 ${GLOBAL_AUDIT.uniqueUrn?'mu':'text-error'}">
+                    <span class="chip ${GLOBAL_AUDIT.uniqueUrn?'OK':'ERRO'}">ID</span> Identificação única da urna
+                </li>
+                <li class="flex items-center gap-2 ${GLOBAL_AUDIT.uniqueSerial?'mu':'text-error'}">
+                    <span class="chip ${GLOBAL_AUDIT.uniqueSerial?'OK':'ERRO'}">MV</span> Serial da Mídia de Votação único
+                </li>
+                <li class="flex items-center gap-2 ${GLOBAL_AUDIT.uniqueLoad?'mu':'text-error'}">
+                    <span class="chip ${GLOBAL_AUDIT.uniqueLoad?'OK':'ERRO'}">CG</span> Código de Carga consistente
+                </li>
+                <li class="flex items-center gap-2 ${GLOBAL_AUDIT.timeJumps===0?'mu':'text-error'}">
+                    <span class="chip ${GLOBAL_AUDIT.timeJumps===0?'OK':'ERRO'}">CLK</span> Sem retrocesso de relógio (${GLOBAL_AUDIT.timeJumps} saltos)
+                </li>
+            </ul>
+        </div>
+    `;
+}
+
+function renderVotes(meta) {
+    if (!meta.votes.length) {
+        $('#sec-votes').innerHTML = '<div class="card mu">Sem votos registrados neste dia.</div>';
+        return;
+    }
+    
+    // Cabin times (heuristic based on enable -> vote)
+    // This is complex to map perfectly without state machine, simplified here
+    
+    $('#sec-votes').innerHTML = `
+        <div class="kpi-grid">
+            <div class="kpi info"><b>${meta.votes.length}</b><span>Total Votos</span></div>
+            <div class="kpi info"><b>${meta.bioEnables.length}</b><span>Habilitações Biométricas</span></div>
+            <div class="kpi warn"><b>${meta.votes.length - meta.bioEnables.length}</b><span>Sem Biometria/Digital Falhou</span></div>
+        </div>
+        <div class="card">
+            <h3>Curva Acumulada de Votação</h3>
+            <canvas id="chartAccum"></canvas>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        let acc = 0;
+        const data = meta.votes.map((v,i) => { acc++; return {x: fmtTime(v.date), y: acc}; });
+        // Downsample for performance if too many points
+        const step = Math.ceil(data.length / 100);
+        const sampled = data.filter((_,i) => i % step === 0 || i === data.length-1);
+        drawLineChart($('#chartAccum'), sampled);
+    }, 50);
+}
+
+function renderTimeline(meta) {
+    // Key events
+    const events = [
+        {t: 'Abertura', logs: meta.logs.filter(l => l.msg.includes('Início das operações'))},
+        {t: 'Zerésima', logs: meta.logs.filter(l => l.msg.includes('ZERÉSIMA'))},
+        {t: 'Encerramento', logs: meta.logs.filter(l => l.msg.includes('encerramento'))},
+        {t: 'Impressão BU', logs: meta.buPrints}
+    ];
+    
+    let html = '<div class="card"><h3>Eventos Principais</h3><div class="mt-4">';
+    events.forEach(ev => {
+        if(ev.logs.length) {
+            html += `<div class="mb-4"><b class="text-primary">${ev.t}</b>`;
+            ev.logs.forEach(l => {
+                html += `<div class="flex gap-4 text-sm mu" style="border-left:2px solid var(--border); padding-left:10px; margin-top:4px">
+                    <span class="font-mono">${fmtTime(l.date)}</span>
+                    <span>${esc(l.msg.substring(0,100))}</span>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+    });
+    html += '</div></div>';
+    $('#sec-timeline').innerHTML = html;
+}
+
+function renderBU(meta) {
+    $('#sec-bu').innerHTML = `
+        <div class="card">
+            <h3>Conferência Aritmética (BU)</h3>
+            <p class="mu text-sm mb-4">Insira os dados do Boletim de Urna impresso para conferir com o log digital.</p>
+            
+            <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
+                <div><label class="text-xs font-bold">Comparecimento (Qtd Votos)</label><br><input type="number" id="bu-qtd" class="w-full"></div>
+                <div><label class="text-xs font-bold">Biometria (Qtd)</label><br><input type="number" id="bu-bio" class="w-full"></div>
+                <div><label class="text-xs font-bold">Cód. Carga</label><br><input type="text" id="bu-carga" class="w-full"></div>
+                <button class="btn btn-primary" style="align-self:flex-end" onclick="checkBU()">Conferir</button>
+            </div>
+            
+            <div id="bu-result" class="hide mt-4 p-4 rounded" style="background:var(--bg-body)"></div>
+        </div>
+    `;
+}
+
+window.checkBU = function() {
+    const meta = PARSED_DAYS[ACTIVE_DAY].meta;
+    const qtd = parseInt($('#bu-qtd').value);
+    const bio = parseInt($('#bu-bio').value);
+    const carga = $('#bu-carga').value.trim();
+    
+    let res = [];
+    
+    if (qtd) {
+        const match = qtd === meta.votes.length;
+        res.push(`<div class="${match?'text-success':'text-error'} font-bold">Votos: BU=${qtd} vs LOG=${meta.votes.length} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
+    }
+    if (bio) {
+        const match = bio === meta.bioEnables.length;
+        res.push(`<div class="${match?'text-success':'text-error'} font-bold">Biometria: BU=${bio} vs LOG=${meta.bioEnables.length} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
+    }
+    if (carga) {
+        // Extract load code from logs roughly
+        const logCarga = RAW_LOGS.find(l => l.msg.includes('Código de carga'))?.msg.match(/[\d.]+/)?.[0];
+        const match = logCarga && carga.includes(logCarga);
+        res.push(`<div class="${match?'text-success':'text-error'} font-bold">Carga: BU=${carga} vs LOG=${logCarga||'?'} ${match?'✓ OK':'✗ DIVERGENTE'}</div>`);
+    }
+    
+    const div = $('#bu-result');
+    div.innerHTML = res.join('<br>') || 'Preencha os campos acima.';
+    div.classList.remove('hide');
+};
+
+function renderLogs() {
+    const container = $('#sec-logs');
+    if (container.dataset.loaded) return;
+    
+    const logs = PARSED_DAYS[ACTIVE_DAY].logs;
+    let html = `
+        <div class="card">
+            <div class="flex gap-2 mb-4">
+                <input type="text" id="logFilter" placeholder="Filtrar mensagens..." style="flex:1" onkeyup="filterLogs()">
+                <select id="logLevel" onchange="filterLogs()">
+                    <option value="">Todos Níveis</option>
+                    <option value="INFO">INFO</option>
+                    <option value="ALERTA">ALERTA</option>
+                    <option value="ERRO">ERRO</option>
+                </select>
+            </div>
+            <div class="wrap-table">
+                <table id="logTable">
+                    <thead><tr><th style="width:140px">Hora</th><th style="width:80px">Nível</th><th>Mensagem</th></tr></thead>
+                    <tbody>
+                        ${logs.slice(0, 500).map(l => rowLog(l)).join('')}
+                    </tbody>
+                </table>
+                ${logs.length > 500 ? `<div class="p-4 text-center mu">Exibindo primeiros 500 registros. Use o filtro.</div>` : ''}
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
+    container.dataset.loaded = "true";
+}
+
+function rowLog(l) {
+    return `<tr class="log-row" data-lvl="${l.level}" data-msg="${esc(l.msg).toLowerCase()}">
+        <td class="font-mono text-xs">${fmtTime(l.date)}</td>
+        <td><span class="chip ${l.level}">${l.level}</span></td>
+        <td class="text-sm">${esc(l.msg)}</td>
+    </tr>`;
+}
+
+window.filterLogs = function() {
+    const txt = $('#logFilter').value.toLowerCase();
+    const lvl = $('#logLevel').value;
+    const rows = document.querySelectorAll('.log-row');
+    let count = 0;
+    
+    rows.forEach(r => {
+        const show = (!lvl || r.dataset.lvl === lvl) && (!txt || r.dataset.msg.includes(txt));
+        r.style.display = show ? '' : 'none';
+        if(show) count++;
+    });
+};
+
+function renderReport(meta) {
+    $('#sec-report').innerHTML = `
+        <div class="card" style="border-top: 4px solid var(--primary)">
+            <div class="flex justify-between items-center mb-4 noprint">
+                <h2>Relatório Técnico de Auditoria</h2>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+            </div>
+            
+            <div class="text-sm mu mb-4">
+                <p><b>Arquivo:</b> ${CURRENT_FILE}</p>
+                <p><b>Data de Geração:</b> ${new Date().toLocaleString()}</p>
+                <p><b>Urna:</b> ${GLOBAL_AUDIT.urnId}</p>
+                <p><b>Dia Analisado:</b> ${fmtDate(meta.logs[0].date)}</p>
+            </div>
+            
+            <hr style="border:0; border-top:1px solid var(--border); margin:20px 0">
+            
+            <h3>1. Resumo Executivo</h3>
+            <p>O log apresenta <b>${meta.votes.length} votos</b> computados. Foram detectadas <b>${meta.issues.length} ocorrências</b> (alertas ou erros) pelas heurísticas automáticas.</p>
+            
+            <h3 class="mt-4">2. Detalhamento de Ocorrências</h3>
+            <table class="mt-4">
+                <thead><tr><th>Tipo</th><th>Descrição</th></tr></thead>
+                <tbody>
+                    ${meta.issues.length ? meta.issues.map(i => `<tr><td><span class="chip ${i.type}">${i.type}</span></td><td>${esc(i.msg)}</td></tr>`).join('') : '<tr><td colspan="2">Nenhuma ocorrência relevante.</td></tr>'}
+                </tbody>
+            </table>
+
+            <h3 class="mt-4">3. Dados Operacionais</h3>
+            <div class="kpi-grid mt-4">
+                <div class="kpi"><b>${meta.bootCount}</b><span>Reinicializações</span></div>
+                <div class="kpi"><b>${meta.buPrints.length}</b><span>Vias do BU Impressas</span></div>
+                <div class="kpi"><b>${meta.filesGen.length}</b><span>Arquivos Gerados</span></div>
+            </div>
+            
+            <p class="mt-4 text-xs mu">Este relatório é gerado por ferramenta independente e não possui valor legal oficial perante a Justiça Eleitoral. Serve apenas para conferência técnica da integridade dos arquivos de log públicos.</p>
+        </div>
+    `;
+}
+
+// --- CHARTING UTILS (Canvas API) ---
+function drawBarChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w; canvas.height = h;
+    
+    const max = Math.max(...data.map(d=>d.y), 1);
+    const barW = (w / data.length) * 0.8;
+    const gap = (w / data.length) * 0.2;
+    
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
+    
+    data.forEach((d, i) => {
+        const barH = (d.y / max) * (h - 30);
+        ctx.fillRect(i * (barW+gap) + gap/2, h - barH - 20, barW, barH);
+        
+        // Labels
+        if (i % 2 === 0) {
+            ctx.fillStyle = '#999';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(d.x, i * (barW+gap) + gap/2, h - 5);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
+        }
+    });
+}
+
+function drawLineChart(canvas, data) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w; canvas.height = h;
+    
+    if(!data.length) return;
+    
+    const maxY = data[data.length-1].y;
+    const maxX = data.length;
+    
+    ctx.beginPath();
+    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--primary');
+    ctx.lineWidth = 2;
+    
+    data.forEach((d, i) => {
+        const x = (i / (maxX-1)) * w;
+        const y = h - ((d.y / maxY) * (h - 40)) - 20;
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    
+    // Fill gradient
+    ctx.lineTo(w, h); ctx.lineTo(0, h);
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary') + '20'; // low opacity
+    ctx.fill();
+}
+
+// Icons SVG
+function getIcon(name) {
+    const icons = {
+        'layout': '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>',
+        'shield-check': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+        'bar-chart-2': '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+        'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        'printer': '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+        'list': '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+        'file-text': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'
+    };
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">${icons[name]||''}</svg>`;
+}
+
+</script>
+</body>
+</html>
